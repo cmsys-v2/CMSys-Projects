@@ -1,0 +1,156 @@
+/* ==========================================================================
+   Special Project System (SPS) - Quantity Surveying & BOQ Stylesheet
+   Bill of Quantities, Rate Analysis, Earned Value EVM & Estimation Tables
+   ========================================================================== */
+
+.qs-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* EVM Metric Dashboard Cards */
+.evm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.evm-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.evm-card-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+}
+
+.evm-card-value {
+  font-size: 1.4rem;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  color: var(--text-main);
+}
+
+.evm-card-status {
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.evm-positive { color: var(--accent-success); }
+.evm-negative { color: var(--accent-danger); }
+.evm-neutral { color: var(--accent-warning); }
+
+/* BOQ Master Table */
+.boq-table-wrapper {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+
+.boq-toolbar {
+  padding: 16px 20px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.boq-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.88rem;
+}
+
+.boq-table th {
+  background: var(--bg-surface);
+  color: var(--text-muted);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  letter-spacing: 0.8px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.boq-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-main);
+}
+
+.boq-table tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.boq-item-code {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--accent-primary);
+  font-size: 0.82rem;
+}
+
+.boq-category-header td {
+  background: rgba(56, 189, 248, 0.08);
+  font-weight: 700;
+  color: var(--accent-primary);
+  font-size: 0.9rem;
+  letter-spacing: 0.5px;
+}
+
+.num-cell {
+  text-align: right;
+  font-family: var(--font-mono);
+}
+
+.boq-total-row td {
+  background: var(--bg-surface);
+  font-weight: 800;
+  font-size: 1rem;
+  color: var(--accent-success);
+  border-top: 2px solid var(--accent-primary);
+}
+
+/* Rate Analysis Modal Breakdown */
+.rate-breakdown-box {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rate-breakdown-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.rate-breakdown-row:last-child {
+  border-bottom: none;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--accent-primary);
+}

@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SPS — Special Project System | Sri Lanka Navy CE</title>
+  <meta name="description" content="Special Project Monitoring System for Sri Lanka Navy Civil Engineering Department — Religious, Clean Sri Lanka, Housing & Miscellaneous CSR Projects">
+
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <!-- SPS Styles -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/gantt.css">
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ═══════════════════════════ SIDEBAR ═══════════════════════════ -->
+  <aside class="sidebar">
+    <!-- Brand -->
+    <div class="sidebar-brand">
+      <div class="brand-icon">SP</div>
+      <div class="brand-info">
+        <h1>SPS</h1>
+        <span>Special Project System</span>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="sidebar-nav">
+      <div class="nav-section">Main</div>
+
+      <button class="nav-link active" data-view="dashboard">
+        <i class="fas fa-tachometer-alt"></i>
+        Dashboard
+      </button>
+
+      <button class="nav-link" data-view="projects">
+        <i class="fas fa-folder-open"></i>
+        All Projects
+      </button>
+
+      <button class="nav-link" data-view="labour">
+        <i class="fas fa-users"></i>
+        Labour Details
+      </button>
+
+      <div class="nav-section">Categories</div>
+
+      <button class="nav-link" onclick="window.app.navigate('dashboard');setTimeout(()=>window.app.filterCategory('Religious'),100)">
+        <i class="fas fa-place-of-worship" style="color:var(--religious);"></i>
+        Religious
+        <span class="nav-badge nb-gold" id="nb-religious">0</span>
+      </button>
+
+      <button class="nav-link" onclick="window.app.navigate('dashboard');setTimeout(()=>window.app.filterCategory('Clean Sri Lanka'),100)">
+        <i class="fas fa-leaf" style="color:var(--csl);"></i>
+        Clean Sri Lanka
+        <span class="nav-badge nb-green" id="nb-cleansrilanka">0</span>
+      </button>
+
+      <button class="nav-link" onclick="window.app.navigate('dashboard');setTimeout(()=>window.app.filterCategory('Housing'),100)">
+        <i class="fas fa-home" style="color:var(--housing);"></i>
+        Housing
+        <span class="nav-badge nb-blue" id="nb-housing">0</span>
+      </button>
+
+      <button class="nav-link" onclick="window.app.navigate('dashboard');setTimeout(()=>window.app.filterCategory('Miscellaneous'),100)">
+        <i class="fas fa-folder" style="color:var(--misc);"></i>
+        Miscellaneous
+        <span class="nav-badge nb-purple" id="nb-miscellaneous">0</span>
+      </button>
+
+      <div class="nav-section">Administration</div>
+
+      <!-- Settings View (Admin Only) -->
+      <button class="nav-link" data-view="settings">
+        <i class="fas fa-cog"></i>
+        Settings
+        <span style="font-size:0.65rem;background:var(--accent);color:#07101f;padding:1px 5px;border-radius:4px;font-weight:800;margin-left:auto;">ADMIN</span>
+      </button>
+    </nav>
+
+    <!-- Firebase Status -->
+    <div class="sidebar-footer">
+      <div class="fb-status">
+        <div class="fb-status-row">
+          <span style="font-size:0.72rem;color:var(--text-dim);font-weight:600;">SAILOR DB</span>
+          <span id="fb-status-text" style="font-size:0.75rem;">
+            <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--warning);margin-right:4px;"></span>
+            Connecting...
+          </span>
+        </div>
+        <div style="font-size:0.68rem;color:var(--text-dim);">ce-admin-panel2025</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ═══════════════════════════ MAIN CONTENT ═══════════════════════════ -->
+  <div class="main">
+
+    <!-- Top Bar Header -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="page-breadcrumb">
+          <span>SLN / CED</span>
+          <i class="fas fa-chevron-right" style="font-size:0.6rem;"></i>
+          <span id="page-title">Dashboard</span>
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        <!-- Interactive User Profile & Naval Role Switcher -->
+        <div id="topbar-user-role"></div>
+
+        <div class="search-wrap">
+          <i class="fas fa-search"></i>
+          <input type="text" id="global-search" placeholder="Search projects...">
+        </div>
+        <button class="btn btn-primary" onclick="window.app.openNewProjectModal()">
+          <i class="fas fa-plus"></i> New Project
+        </button>
+        <button class="btn btn-secondary btn-icon" onclick="window.location.reload()" title="Refresh">
+          <i class="fas fa-sync-alt"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Content -->
+    <div class="content">
+
+      <!-- ═══════════ DASHBOARD VIEW ═══════════ -->
+      <div class="view active" id="dashboard-view">
+
+        <!-- KPI Row -->
+        <div class="kpi-row">
+          <div class="kpi-card">
+            <div class="kpi-text">
+              <label>Active Projects</label>
+              <div class="kpi-val" id="kpi-active" style="color:var(--success);">0</div>
+              <div class="kpi-sub">Currently running</div>
+            </div>
+            <i class="kpi-icon fas fa-project-diagram"></i>
+          </div>
+          <div class="kpi-card kpi-gold">
+            <div class="kpi-text">
+              <label>On Hold</label>
+              <div class="kpi-val" id="kpi-onhold" style="color:var(--warning);">0</div>
+              <div class="kpi-sub">Awaiting clearance</div>
+            </div>
+            <i class="kpi-icon fas fa-pause-circle"></i>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-text">
+              <label>Total Budget</label>
+              <div class="kpi-val" id="kpi-budget" style="color:var(--accent);">—</div>
+              <div class="kpi-sub">All project combined</div>
+            </div>
+            <i class="kpi-icon fas fa-coins"></i>
+          </div>
+          <div class="kpi-card kpi-green">
+            <div class="kpi-text">
+              <label>Sailors Deployed</label>
+              <div class="kpi-val" id="kpi-labour" style="color:var(--success);">0</div>
+              <div class="kpi-sub">Currently attached</div>
+            </div>
+            <i class="kpi-icon fas fa-user-hard-hat"></i>
+          </div>
+          <div class="kpi-card kpi-red">
+            <div class="kpi-text">
+              <label>Critical Material</label>
+              <div class="kpi-val" id="kpi-critical" style="color:var(--danger);">0</div>
+              <div class="kpi-sub">Projects with shortages</div>
+            </div>
+            <i class="kpi-icon fas fa-exclamation-triangle"></i>
+          </div>
+        </div>
+
+        <!-- Category Filter Tabs -->
+        <div class="cat-tabs">
+          <button class="cat-tab all active" data-cat="All" onclick="window.app.filterCategory('All')">
+            <i class="fas fa-th-large"></i>
+            All Projects
+            <span class="count" id="cat-count-all">0</span>
+          </button>
+          <button class="cat-tab religious" data-cat="Religious" onclick="window.app.filterCategory('Religious')">
+            <i class="fas fa-place-of-worship"></i>
+            Religious
+            <span class="count" id="cat-count-religious">0</span>
+          </button>
+          <button class="cat-tab csl" data-cat="Clean Sri Lanka" onclick="window.app.filterCategory('Clean Sri Lanka')">
+            <i class="fas fa-leaf"></i>
+            Clean Sri Lanka
+            <span class="count" id="cat-count-clean-sri-lanka">0</span>
+          </button>
+          <button class="cat-tab housing" data-cat="Housing" onclick="window.app.filterCategory('Housing')">
+            <i class="fas fa-home"></i>
+            Housing
+            <span class="count" id="cat-count-housing">0</span>
+          </button>
+          <button class="cat-tab misc" data-cat="Miscellaneous" onclick="window.app.filterCategory('Miscellaneous')">
+            <i class="fas fa-folder"></i>
+            Miscellaneous
+            <span class="count" id="cat-count-miscellaneous">0</span>
+          </button>
+        </div>
+
+        <!-- Project Cards Grid -->
+        <div>
+          <div class="section-header">
+            <div class="section-title">
+              <i class="fas fa-th-large"></i>
+              Special Projects
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="window.app.openNewProjectModal()">
+              <i class="fas fa-plus"></i> Add Project
+            </button>
+          </div>
+          <div class="section-divider"></div>
+          <div class="project-grid" id="projects-grid">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+        <!-- Multi-Project Gantt Chart -->
+        <div>
+          <div class="section-header">
+            <div class="section-title">
+              <i class="fas fa-stream"></i>
+              Resource Allocation Gantt — All Projects
+            </div>
+          </div>
+          <div class="section-divider"></div>
+          <div id="gantt-render-target" style="min-height:300px;"></div>
+        </div>
+
+      </div><!-- /dashboard-view -->
+
+
+      <!-- ═══════════ PROJECTS VIEW ═══════════ -->
+      <div class="view" id="projects-view">
+        <div class="section-header">
+          <div class="section-title">
+            <i class="fas fa-folder-open"></i>
+            All Special Projects
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="window.app.openNewProjectModal()">
+            <i class="fas fa-plus"></i> New Project
+          </button>
+        </div>
+        <div class="section-divider"></div>
+
+        <div class="panel">
+          <div class="panel-body" style="overflow-x:auto;" id="projects-full-list">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </div><!-- /projects-view -->
+
+
+      <!-- ═══════════ LABOUR DETAILS VIEW ═══════════ -->
+      <div class="view" id="labour-view">
+        <!-- Rendered entirely by labour-centre.js -->
+      </div><!-- /labour-view -->
+
+
+      <!-- ═══════════ SETTINGS VIEW (ADMIN ONLY) ═══════════ -->
+      <div class="view" id="settings-view">
+        <!-- Rendered by app.js renderSettingsView() -->
+      </div><!-- /settings-view -->
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+
+<!-- ═══════════════════ MODALS ═══════════════════ -->
+
+<!-- Project Detail Modal -->
+<div class="modal-overlay" id="project-detail-overlay" onclick="if(event.target===this)window.projectDetail.close()">
+  <!-- Filled by project-detail.js -->
+</div>
+
+<!-- Generic Modal (New/Edit Project, Attach Labour, Job Card, Doc, Drive Link, Photo, Weather, User Edit) -->
+<div class="modal-overlay" id="generic-modal-overlay" onclick="if(event.target===this)this.classList.remove('open')">
+  <!-- Filled dynamically -->
+</div>
+
+<!-- Toast Notifications -->
+<div id="toasts"></div>
+
+
+<!-- ═══════════════════ SCRIPTS ═══════════════════ -->
+<script src="js/store.js"></script>
+<script src="js/firebase-sync.js"></script>
+<script src="js/gantt-engine.js"></script>
+<script src="js/project-detail.js"></script>
+<script src="js/labour-centre.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
