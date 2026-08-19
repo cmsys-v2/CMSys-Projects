@@ -407,9 +407,11 @@
     _save() {
       try {
         const { projects, attachments, jobCards, documents, weatherLogs, users, activeUserId, ganttZoom, ganttStartYear } = this._state;
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        const serialized = JSON.stringify({
           projects, attachments, jobCards, documents, weatherLogs, users, activeUserId, ganttZoom, ganttStartYear, v: 4
-        }));
+        });
+        localStorage.setItem(STORAGE_KEY, serialized);
+        localStorage.setItem('sps_master_state', serialized);
       } catch(e) { console.warn('SPS Store save failed:', e); }
     }
 

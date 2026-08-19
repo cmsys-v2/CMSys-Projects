@@ -84,7 +84,34 @@
       });
     }
 
-    _loadFallback() {
+    async _loadFallback() {
+      // First try fetching from our local server's Firebase proxy
+      try {
+        const res = await fetch('/api/sailors');
+        if (res.ok) {
+          const json = await res.json();
+          if (json.sailors && json.sailors.length > 0) {
+            const normalized = json.sailors.map((s, i) => ({
+              id: s.id || `FB-${i}`,
+              official_number: s.official_number || s.officialNumber || s.off_no || s.navy_no || `NAV/${i}`,
+              name: s.name || (s.firstName ? `${s.firstName} ${s.lastName||''}`.trim() : `Sailor ${i}`),
+              rank:  s.rank  || 'AB',
+              trade: (s.trade || s.branch || 'MA').toUpperCase(),
+              category: s.category || 'Regular',
+              zone: s.zone_assigned || s.zone || 'Unassigned',
+              status: s.status || 'Active',
+              performance_score: parseFloat(s.performance_score || s.rating || 7.5)
+            }));
+            window.spsStore.setSailors(normalized);
+            this.connected = true;
+            this._updateUI(true, normalized.length);
+            return;
+          }
+        }
+      } catch (e) {
+        // Fall through to hardcoded pool
+      }
+
       window.spsStore.setSailors(FALLBACK_SAILORS);
       this.connected = false;
       this._updateUI(false, FALLBACK_SAILORS.length);
