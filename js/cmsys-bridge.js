@@ -80,10 +80,24 @@ class CMSysSyncBridge {
   /**
    * Trigger REST API Sync Endpoint for direct server-to-server absorption
    */
+  /**
+   * Trigger REST API Sync & Firebase Cloud Absorption
+   */
   async triggerServerRESTSync() {
     const payload = this.generateCMSysAbsorptionPackage();
     if (!payload) return;
 
+    let cloudOk = false;
+    // 1. Publish directly to Firebase Database #2 (cmsys-projects)
+    if (window.spsCloudSync) {
+      try {
+        cloudOk = await window.spsCloudSync.publishAbsorptionPackage(payload);
+      } catch (err) {
+        console.warn('⚠️ Cloud publish error:', err);
+      }
+    }
+
+    // 2. Also notify backend REST endpoint
     try {
       const response = await fetch("api/api.php?action=cmsys_absorb", {
         method: "POST",
@@ -92,15 +106,20 @@ class CMSysSyncBridge {
       });
 
       const resData = await response.json();
-      if (resData.status === "success") {
+      if (resData.status === "success" || cloudOk) {
         this.lastSyncTimestamp = new Date().toLocaleTimeString();
-        if (window.app) window.app.showToast(`CMSys absorbed ${payload.attached_sailors_count} sailor attachments successfully!`, "success");
+        if (window.app) window.app.showToast(`Published ${payload.attached_sailors_count} attachments to cmsys-projects Cloud & REST!`, "success");
       } else {
-        if (window.app) window.app.showToast("REST Sync completed locally.", "info");
+        if (window.app) window.app.showToast("Sync completed locally.", "info");
       }
     } catch (e) {
-      console.warn("⚠️ REST Sync fallback to local mode:", e);
-      if (window.app) window.app.showToast("Sync ready for CMSys absorption.", "info");
+      if (cloudOk) {
+        this.lastSyncTimestamp = new Date().toLocaleTimeString();
+        if (window.app) window.app.showToast(`Published ${payload.attached_sailors_count} attachments to cmsys-projects Cloud!`, "success");
+      } else {
+        console.warn("⚠️ REST Sync fallback to local mode:", e);
+        if (window.app) window.app.showToast("Sync ready for CMSys absorption.", "info");
+      }
     }
   }
 

@@ -1,0 +1,52 @@
+{
+  "rules": {
+    ".read": true,
+    ".write": true,
+    "special_projects": {
+      ".indexOn": ["id", "code", "category", "status", "start_date", "end_date"]
+    },
+    "naval_projects": {
+      ".indexOn": ["id", "code", "voteNumber", "status", "priority", "projectType", "startDate", "endDate"]
+    },
+    "procurement_files": {
+      ".indexOn": ["id", "projectId", "projectCode", "voteNumber", "prNumber", "presentPosition", "supplier", "date"]
+    },
+    "special_project_attachments": {
+      ".indexOn": ["project_id", "official_number", "trade", "status", "from_date", "to_date"]
+    },
+    "projects": {
+      ".indexOn": ["id", "code", "category", "status"]
+    },
+    "attachments": {
+      ".indexOn": ["project_id", "official_number", "trade", "status"]
+    },
+    "job_cards": {
+      ".indexOn": ["project_id", "status", "job_number"]
+    },
+    "documents": {
+      ".indexOn": ["project_id", "type", "date"]
+    },
+    "weather_logs": {
+      ".indexOn": ["project_id", "date"]
+    },
+    "work_orders": {
+      ".indexOn": ["zone", "status", "trade", "created_at"]
+    },
+    "daily_allocations": {
+      ".indexOn": ["date", "sailor_id", "official_number"]
+    },
+    "sailors": {
+      ".indexOn": ["official_number", "trade", "category", "status"]
+    },
+    "cmsys_absorption": {
+      ".indexOn": ["status", "timestamp"]
+    },
+    "cmsys_absorption_history": {
+      ".indexOn": ["published_at"]
+    },
+    "system_status": {
+      ".read": true,
+      ".write": true
+    }
+  }
+}

@@ -23,6 +23,8 @@
     constructor() {
       this._state = {
         projects: [],
+        navalProjects: [],
+        procurementFiles: [],
         attachments: [],
         jobCards: [],
         documents: [],
@@ -41,6 +43,7 @@
         ganttZoom: 'Weeks',
         ganttStartYear: 2026,
         activeCategory: 'All',
+        activeNavalVote: 'All',
         lastUpdated: null
       };
       this._subs = [];
@@ -52,18 +55,21 @@
     _emit(event, data) { this._subs.forEach(fn => { try { fn(event, data, this._state); } catch(e){} }); }
 
     // ── State Getters ──
-    get projects()       { return this._state.projects; }
-    get attachments()    { return this._state.attachments; }
-    get jobCards()       { return this._state.jobCards; }
-    get documents()      { return this._state.documents; }
-    get sailors()        { return this._state.sailors; }
-    get weatherLogs()    { return this._state.weatherLogs || []; }
-    get users()          { return this._state.users; }
-    get activeUserId()   { return this._state.activeUserId; }
-    get ganttZoom()      { return this._state.ganttZoom; }
-    get ganttStartYear() { return this._state.ganttStartYear || 2026; }
-    get activeCategory() { return this._state.activeCategory; }
-    get navalRoles()     { return NAVAL_ROLES; }
+    get projects()         { return this._state.projects; }
+    get navalProjects()    { return this._state.navalProjects || []; }
+    get procurementFiles() { return this._state.procurementFiles || []; }
+    get attachments()      { return this._state.attachments; }
+    get jobCards()         { return this._state.jobCards; }
+    get documents()        { return this._state.documents; }
+    get sailors()          { return this._state.sailors; }
+    get weatherLogs()      { return this._state.weatherLogs || []; }
+    get users()            { return this._state.users; }
+    get activeUserId()     { return this._state.activeUserId; }
+    get ganttZoom()        { return this._state.ganttZoom; }
+    get ganttStartYear()   { return this._state.ganttStartYear || 2026; }
+    get activeCategory()   { return this._state.activeCategory; }
+    get activeNavalVote()  { return this._state.activeNavalVote || 'All'; }
+    get navalRoles()       { return NAVAL_ROLES; }
 
     get currentUser() {
       return this._state.users.find(u => u.id === this._state.activeUserId) || this._state.users[0];
@@ -273,6 +279,182 @@
       return this._state.projects.filter(p => p.category === cat);
     }
 
+    // ── Naval Projects CRUD ──
+    setNavalProjects(list) { 
+      this._state.navalProjects = list || []; 
+      this._save(); 
+      this._emit('NAVAL_PROJECTS_SET', list); 
+    }
+
+    addNavalProject(p) {
+      p.id = p.id || `NP-${Date.now()}`;
+      p.code = p.code || p.nameAbbreviation || `NP-${Date.now().toString().slice(-4)}`;
+      p.created_at = new Date().toISOString();
+      p.progress = p.progress || 0;
+      p.voteAllocation = Number(p.voteAllocation || 0);
+      p.committed = Number(p.committed || 0);
+      p.actualSpent = Number(p.actualSpent || 0);
+      p.files = p.files || [];
+      p.status = p.status || 'Active';
+      this._state.navalProjects.push(p);
+      this._save(); 
+      this._emit('NAVAL_PROJECT_ADDED', p);
+    }
+
+    updateNavalProject(id, changes) {
+      const idx = this._state.navalProjects.findIndex(p => p.id === id || p.code === id);
+      if (idx >= 0) {
+        Object.assign(this._state.navalProjects[idx], changes);
+        this._save();
+        this._emit('NAVAL_PROJECT_UPDATED', { id, changes });
+      }
+    }
+
+    deleteNavalProject(id) {
+      this._state.navalProjects = this._state.navalProjects.filter(p => p.id !== id && p.code !== id);
+      this._state.procurementFiles = this._state.procurementFiles.filter(f => f.projectId !== id && f.projectCode !== id);
+      this._save(); 
+      this._emit('NAVAL_PROJECT_DELETED', id);
+    }
+
+    getNavalProject(id) {
+      return this._state.navalProjects.find(p => p.id === id || p.code === id) || null;
+    }
+
+    getNavalProjectsByVote(vote) {
+      if (!vote || vote === 'All') return this._state.navalProjects;
+      return this._state.navalProjects.filter(p => {
+        if (!p.voteNumber) return false;
+        if (vote === 'Non-Naval') return p.voteNumber.includes('NON-NAVAL') || p.financialMean === 'Non-Public Fund' || p.financialMean === 'Contractual';
+        return p.voteNumber.includes(vote);
+      });
+    }
+
+    setActiveNavalVote(vote) {
+      this._state.activeNavalVote = vote;
+      this._emit('NAVAL_VOTE_CHANGED', vote);
+    }
+
+    // ── Procurement Files CRUD ──
+    setProcurementFiles(list) {
+      this._state.procurementFiles = list || [];
+      this._save();
+      this._emit('PROCUREMENT_FILES_SET', list);
+    }
+
+    addProcurementFile(file) {
+      file.id = file.id || `PF-${Date.now()}`;
+      file.created_at = new Date().toISOString();
+      file.fileCost = Number(file.fileCost || (file.qty * file.unitPrice) || 0);
+      file.presentPosition = file.presentPosition || 'Processing File';
+      this._state.procurementFiles.push(file);
+
+      // Also attach to project in navalProjects if present
+      const proj = this.getNavalProject(file.projectId);
+      if (proj) {
+        proj.files = proj.files || [];
+        proj.files.push(file);
+        proj.filesCount = proj.files.length;
+        proj.committed = (proj.committed || 0) + file.fileCost;
+      }
+
+      this._save();
+      this._emit('PROCUREMENT_FILE_ADDED', file);
+    }
+
+    updateProcurementFile(id, changes) {
+      const idx = this._state.procurementFiles.findIndex(f => f.id === id);
+      if (idx >= 0) {
+        Object.assign(this._state.procurementFiles[idx], changes);
+        // Also update inside navalProject files array
+        const pId = this._state.procurementFiles[idx].projectId;
+        const proj = this.getNavalProject(pId);
+        if (proj && proj.files) {
+          const fIdx = proj.files.findIndex(f => f.id === id);
+          if (fIdx >= 0) Object.assign(proj.files[fIdx], changes);
+        }
+        this._save();
+        this._emit('PROCUREMENT_FILE_UPDATED', { id, changes });
+      }
+    }
+
+    deleteProcurementFile(id) {
+      const target = this._state.procurementFiles.find(f => f.id === id);
+      if (target) {
+        const proj = this.getNavalProject(target.projectId);
+        if (proj && proj.files) {
+          proj.files = proj.files.filter(f => f.id !== id);
+          proj.filesCount = proj.files.length;
+        }
+      }
+      this._state.procurementFiles = this._state.procurementFiles.filter(f => f.id !== id);
+      this._save();
+      this._emit('PROCUREMENT_FILE_DELETED', id);
+    }
+
+    getProcurementFilesByProject(projectId) {
+      return this._state.procurementFiles.filter(f => f.projectId === projectId || f.projectCode === projectId);
+    }
+
+    // ── Strategic Vote Statistics ──
+    getVoteStatistics() {
+      const projects = this._state.navalProjects;
+      const votes = [
+        { id: '2104', label: 'Vote 2104 — Capital Works & Constructions', match: '2104', color: 'var(--vote-2104, #06b6d4)' },
+        { id: '2001', label: 'Vote 2001 — Infrastructure Renovations', match: '2001', color: 'var(--vote-2001, #f59e0b)' },
+        { id: '2506', label: 'Vote 2506 — Coastal & Marine Engineering', match: '2506', color: 'var(--vote-2506, #10b981)' },
+        { id: '1303', label: 'Vote 1303 — Base & Station Maintenance', match: '1303', color: 'var(--vote-1303, #8b5cf6)' },
+        { id: 'non_naval', label: 'Non-Naval / Welfare & Contractual Funds', match: 'NON-NAVAL', color: 'var(--vote-non, #ec4899)' },
+        { id: '2103', label: 'Vote 2103 — Plant Machinery & Equipment', match: '2103', color: 'var(--vote-2103, #3b82f6)' }
+      ];
+
+      let grandTotalAlloc = 0;
+      let grandTotalCommitted = 0;
+      let grandTotalSpent = 0;
+      let grandTotalProjects = projects.length;
+      let grandTotalFiles = this._state.procurementFiles.length;
+
+      const breakdown = votes.map(v => {
+        const matching = projects.filter(p => {
+          if (!p.voteNumber) return false;
+          if (v.id === 'non_naval') return p.voteNumber.includes('NON-NAVAL') || p.financialMean === 'Non-Public Fund' || p.financialMean === 'Contractual';
+          return p.voteNumber.includes(v.match);
+        });
+
+        const alloc = matching.reduce((sum, p) => sum + Number(p.voteAllocation || 0), 0);
+        const committed = matching.reduce((sum, p) => sum + Number(p.committed || 0), 0);
+        const spent = matching.reduce((sum, p) => sum + Number(p.actualSpent || 0), 0);
+        const balance = Math.max(0, alloc - (committed + spent));
+        const fileCount = matching.reduce((sum, p) => sum + (p.files ? p.files.length : 0), 0);
+
+        grandTotalAlloc += alloc;
+        grandTotalCommitted += committed;
+        grandTotalSpent += spent;
+
+        return {
+          ...v,
+          count: matching.length,
+          allocation: alloc,
+          committed,
+          spent,
+          balance,
+          fileCount,
+          percentCommitted: alloc > 0 ? ((committed / alloc) * 100).toFixed(1) : '0.0',
+          percentSpent: alloc > 0 ? ((spent / alloc) * 100).toFixed(1) : '0.0'
+        };
+      });
+
+      return {
+        grandTotalAlloc,
+        grandTotalCommitted,
+        grandTotalSpent,
+        grandTotalBalance: Math.max(0, grandTotalAlloc - (grandTotalCommitted + grandTotalSpent)),
+        grandTotalProjects,
+        grandTotalFiles,
+        breakdown
+      };
+    }
+
     getActiveProjects() { return this._state.projects.filter(p => p.status !== 'Completed'); }
     getCompletedProjects() { return this._state.projects.filter(p => p.status === 'Completed'); }
 
@@ -406,9 +588,9 @@
 
     _save() {
       try {
-        const { projects, attachments, jobCards, documents, weatherLogs, users, activeUserId, ganttZoom, ganttStartYear } = this._state;
+        const { projects, navalProjects, procurementFiles, attachments, jobCards, documents, weatherLogs, users, activeUserId, ganttZoom, ganttStartYear, activeCategory, activeNavalVote } = this._state;
         const serialized = JSON.stringify({
-          projects, attachments, jobCards, documents, weatherLogs, users, activeUserId, ganttZoom, ganttStartYear, v: 4
+          projects, navalProjects, procurementFiles, attachments, jobCards, documents, weatherLogs, users, activeUserId, ganttZoom, ganttStartYear, activeCategory, activeNavalVote, v: 5
         });
         localStorage.setItem(STORAGE_KEY, serialized);
         localStorage.setItem('sps_master_state', serialized);
@@ -420,16 +602,20 @@
         const raw = localStorage.getItem(STORAGE_KEY);
         if (raw) {
           const d = JSON.parse(raw);
-          if (d.v === 4) {
-            this._state.projects       = d.projects       || [];
-            this._state.attachments    = d.attachments    || [];
-            this._state.jobCards       = d.jobCards       || [];
-            this._state.documents      = d.documents      || [];
-            this._state.weatherLogs    = d.weatherLogs    || [];
-            this._state.users          = d.users          || this._state.users;
-            this._state.activeUserId   = d.activeUserId   || 'U001';
-            this._state.ganttZoom      = d.ganttZoom      || 'Weeks';
-            this._state.ganttStartYear = d.ganttStartYear || 2026;
+          if (d.v === 4 || d.v === 5) {
+            this._state.projects         = d.projects         || [];
+            this._state.navalProjects    = d.navalProjects    || [];
+            this._state.procurementFiles = d.procurementFiles || [];
+            this._state.attachments      = d.attachments      || [];
+            this._state.jobCards         = d.jobCards         || [];
+            this._state.documents        = d.documents        || [];
+            this._state.weatherLogs      = d.weatherLogs      || [];
+            this._state.users            = d.users            || this._state.users;
+            this._state.activeUserId     = d.activeUserId     || 'U001';
+            this._state.ganttZoom        = d.ganttZoom        || 'Weeks';
+            this._state.ganttStartYear   = d.ganttStartYear   || 2026;
+            this._state.activeCategory   = d.activeCategory   || 'All';
+            this._state.activeNavalVote  = d.activeNavalVote  || 'All';
             this._loaded = true;
             return true;
           }

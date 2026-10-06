@@ -109,3 +109,50 @@ CREATE TABLE IF NOT EXISTS `user_profiles` (
   `designation` VARCHAR(128) DEFAULT NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 8. Naval Projects Master Table (Votes & Capital Works)
+CREATE TABLE IF NOT EXISTS `naval_projects` (
+  `id` VARCHAR(64) PRIMARY KEY,
+  `code` VARCHAR(32) NOT NULL,
+  `name` VARCHAR(255) NOT NULL,
+  `name_abbreviation` VARCHAR(32) DEFAULT NULL,
+  `vote_number` VARCHAR(64) NOT NULL,
+  `vote_allocation` DECIMAL(15, 2) DEFAULT 0.00,
+  `committed` DECIMAL(15, 2) DEFAULT 0.00,
+  `actual_spent` DECIMAL(15, 2) DEFAULT 0.00,
+  `project_type` VARCHAR(64) DEFAULT 'New Construction',
+  `financial_mean` VARCHAR(64) DEFAULT 'Vote',
+  `benefactor` VARCHAR(128) DEFAULT 'Civil Works Dept',
+  `project_officer` VARCHAR(128) DEFAULT NULL,
+  `status` ENUM('Active', 'On Hold', 'Completed') DEFAULT 'Active',
+  `start_date` DATE DEFAULT NULL,
+  `end_date` DATE DEFAULT NULL,
+  `work_scope` TEXT DEFAULT NULL,
+  `progress` INT DEFAULT 0,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 9. Procurement Files Table (PR Register & Present Position Stages)
+CREATE TABLE IF NOT EXISTS `procurement_files` (
+  `id` VARCHAR(64) PRIMARY KEY,
+  `project_id` VARCHAR(64) NOT NULL,
+  `project_code` VARCHAR(32) DEFAULT NULL,
+  `pr_number` VARCHAR(128) NOT NULL,
+  `item_code` VARCHAR(128) DEFAULT NULL,
+  `item_name` TEXT NOT NULL,
+  `unit` VARCHAR(32) DEFAULT "No's",
+  `qty` DECIMAL(12, 2) DEFAULT 1.00,
+  `unit_price` DECIMAL(15, 2) DEFAULT 0.00,
+  `file_cost` DECIMAL(15, 2) DEFAULT 0.00,
+  `supplier` VARCHAR(255) DEFAULT 'Naval Stores',
+  `present_position` ENUM('Processing File', 'Awaiting Financial Approval', 'Order Placed', 'Items Dispatched', 'Items Received') DEFAULT 'Processing File',
+  `authorized_by` VARCHAR(128) DEFAULT NULL,
+  `created_by` VARCHAR(128) DEFAULT NULL,
+  `file_group_key` VARCHAR(128) DEFAULT NULL,
+  `file_date` DATE DEFAULT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (`project_id`) REFERENCES `naval_projects`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+

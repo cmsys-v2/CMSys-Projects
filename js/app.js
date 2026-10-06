@@ -22,7 +22,7 @@
     async init() {
       // Load persisted state, or fetch sample data first
       const loaded = window.spsStore.load();
-      if (!loaded || window.spsStore.projects.length === 0) {
+      if (!loaded || window.spsStore.projects.length === 0 || window.spsStore.navalProjects.length === 0) {
         await this._loadSampleData();
       }
 
@@ -31,8 +31,11 @@
       this._renderRoleSwitcher();
       this.navigate('dashboard');
 
-      // Init Firebase sailor sync
+      // Init Firebase sailor sync (DB #1 ce-admin-panel2025: Read-Only)
       if (window.sailorSync) window.sailorSync.init();
+
+      // Init Firebase cloud operations sync (DB #2 cmsys-projects: Read-Write)
+      if (window.spsCloudSync) window.spsCloudSync.init();
 
       // Link Gantt click → project detail
       window.spsGantt.onProjectClick = (pid) => window.projectDetail.openProject(pid);
@@ -42,6 +45,11 @@
         if (['PROJECT_ADDED','PROJECT_UPDATED','PROJECT_DELETED'].includes(event)) {
           if (this._currentView === 'dashboard') this.renderDashboard();
           if (this._currentView === 'projects')  this.renderProjectsView();
+          this.updateSidebarCounts();
+        }
+        if (['NAVAL_PROJECT_ADDED','NAVAL_PROJECT_UPDATED','NAVAL_PROJECT_DELETED','PROCUREMENT_FILE_ADDED','PROCUREMENT_FILE_UPDATED','PROCUREMENT_FILE_DELETED','NAVAL_VOTE_CHANGED'].includes(event)) {
+          if (this._currentView === 'naval-projects') window.navalProjectsModule.render();
+          if (this._currentView === 'dashboard') this.renderDashboard();
           this.updateSidebarCounts();
         }
         if (['ATTACHMENT_ADDED','ATTACHMENT_DELETED','ATTACHMENTS_BULK','ATTACHMENTS_SET'].includes(event)) {
@@ -67,7 +75,26 @@
         window.spsStore.setJobCards(d.job_cards || []);
         window.spsStore.setDocuments(d.documents || []);
         window.spsStore.setWeatherLogs(d.weather_logs || []);
-        console.log('✅ SPS sample data loaded:', d.projects?.length, 'projects');
+        if (d.naval_projects && d.naval_projects.length > 0) {
+          window.spsStore.setNavalProjects(d.naval_projects);
+        }
+        if (d.procurement_files && d.procurement_files.length > 0) {
+          window.spsStore.setProcurementFiles(d.procurement_files);
+        }
+
+        // Additional safeguard for naval_projects.json
+        if (window.spsStore.navalProjects.length === 0) {
+          try {
+            const nr = await fetch('data/naval_projects.json');
+            if (nr.ok) {
+              const nd = await nr.json();
+              if (nd.naval_projects) window.spsStore.setNavalProjects(nd.naval_projects);
+              if (nd.procurement_files) window.spsStore.setProcurementFiles(nd.procurement_files);
+            }
+          } catch(ne) { console.warn('Naval projects standalone load failed:', ne); }
+        }
+
+        console.log('✅ SLN Platform sample data loaded:', window.spsStore.projects?.length, 'special projects,', window.spsStore.navalProjects?.length, 'naval projects');
       } catch(e) { console.warn('Sample data load failed:', e); }
     }
 
@@ -92,10 +119,17 @@
         v.classList.toggle('active', v.id === `${view}-view`);
       });
 
-      const titles = { dashboard:'Dashboard', projects:'Projects', labour:'Labour Details', settings:'Admin Settings' };
-      document.getElementById('page-title').textContent = titles[view] || 'SPS';
+      const titles = { 
+        dashboard: 'Executive Dashboard', 
+        'naval-projects': 'Naval Projects & Procurement Command Center', 
+        projects: 'Special Projects (CSR & Welfare)', 
+        labour: 'Labour & Personnel Center', 
+        settings: 'Admin Settings' 
+      };
+      document.getElementById('page-title').textContent = titles[view] || 'SLN Project Platform';
 
       if (view === 'dashboard') this.renderDashboard();
+      if (view === 'naval-projects') window.navalProjectsModule.render();
       if (view === 'projects')  this.renderProjectsView();
       if (view === 'labour')    window.labourCentre.render();
       if (view === 'settings')  this.renderSettingsView();
@@ -145,19 +179,31 @@
 
     _renderKPIs() {
       const projects = window.spsStore.projects;
-      const active   = projects.filter(p => p.status === 'Active').length;
-      const onHold   = projects.filter(p => p.status === 'On Hold').length;
-      const totalBudget = projects.reduce((s,p) => s + (p.budget || 0), 0);
+      const navalProjects = window.spsStore.navalProjects;
+
+      const spActive = projects.filter(p => p.status === 'Active').length;
+      const npActive = navalProjects.filter(p => p.status === 'Active').length;
+      const active = spActive + npActive;
+
+      const spHold = projects.filter(p => p.status === 'On Hold').length;
+      const npHold = navalProjects.filter(p => p.status === 'On Hold').length;
+      const onHold = spHold + npHold;
+
+      const spBudget = projects.reduce((s,p) => s + (p.budget || 0), 0);
+      const npAlloc = navalProjects.reduce((s,p) => s + (p.voteAllocation || 0), 0);
+      const totalBudget = spBudget + npAlloc;
+
       const totalLabour = window.spsStore.attachments.filter(a => {
         const today = new Date(); today.setHours(0,0,0,0);
         const e = new Date(a.to_date); e.setHours(0,0,0,0);
         return e >= today;
       }).length;
+
       const critical = projects.filter(p => p.material_status === 'Critical').length;
 
       document.getElementById('kpi-active').textContent   = active;
       document.getElementById('kpi-onhold').textContent   = onHold;
-      document.getElementById('kpi-budget').textContent   = 'LKR ' + (totalBudget/1000000).toFixed(1) + 'M';
+      document.getElementById('kpi-budget').textContent   = 'Rs. ' + (totalBudget/1000000).toFixed(1) + 'M';
       document.getElementById('kpi-labour').textContent   = totalLabour;
       document.getElementById('kpi-critical').textContent = critical;
     }
@@ -353,6 +399,13 @@
       const attachments = window.spsStore.attachments;
       const projs = window.spsStore.projects;
       const pkg = { generated: new Date().toISOString(), source: 'SPS v4', total_attachments: attachments.length, total_projects: projs.length, attachments };
+      const cloudStatus = window.spsCloudSync ? window.spsCloudSync.getStatus() : {
+        connected: false,
+        lastSync: 'Offline',
+        projectId: 'cmsys-projects',
+        databaseURL: 'https://cmsys-projects-default-rtdb.asia-southeast1.firebasedatabase.app',
+        region: 'asia-southeast1 (Singapore)'
+      };
 
       v.innerHTML = `
         <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:20px;">
@@ -403,6 +456,48 @@
           </div>
 
           <div>
+            <!-- Dedicated Firebase Cloud Backend Panel -->
+            <div class="section-header">
+              <div class="section-title"><i class="fas fa-cloud"></i> Firebase Cloud Operations</div>
+            </div>
+            <div class="section-divider"></div>
+
+            <div class="panel" style="margin-bottom:20px;">
+              <div class="panel-head">
+                <span class="panel-title"><i class="fas fa-database" style="color:var(--accent);"></i> Realtime Database (cmsys-projects)</span>
+                <span class="badge ${cloudStatus.connected ? 'badge-success' : 'badge-warning'}">
+                  <i class="fas ${cloudStatus.connected ? 'fa-signal' : 'fa-triangle-exclamation'}"></i> ${cloudStatus.connected ? 'Cloud Connected' : 'Local Offline'}
+                </span>
+              </div>
+              <div class="panel-body">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+                  <div style="background:var(--bg-surface);border-radius:8px;padding:10px 12px;">
+                    <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;font-weight:700;">Project ID</div>
+                    <div style="font-weight:700;color:var(--text-main);font-size:0.9rem;margin-top:2px;">${cloudStatus.projectId}</div>
+                    <div style="font-size:0.7rem;color:var(--text-dim);margin-top:2px;">Separate Dedicated Account</div>
+                  </div>
+                  <div style="background:var(--bg-surface);border-radius:8px;padding:10px 12px;">
+                    <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;font-weight:700;">Location Region</div>
+                    <div style="font-weight:700;color:var(--accent);font-size:0.9rem;margin-top:2px;">${cloudStatus.region}</div>
+                    <div style="font-size:0.7rem;color:var(--text-dim);margin-top:2px;">Low-latency Asia RTDB</div>
+                  </div>
+                </div>
+
+                <div style="background:var(--bg-app);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:0.73rem;font-family:var(--mono);line-height:1.6;">
+                  <div style="color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">URL: <span style="color:var(--accent);">${cloudStatus.databaseURL}</span></div>
+                  <div style="color:var(--text-muted);">Topology: <span style="color:#10b981;font-weight:700;">Dual Firebase (DB #1 Read-Only / DB #2 Read-Write)</span></div>
+                  <div style="color:var(--text-muted);">Last Sync: <strong>${cloudStatus.lastSync}</strong></div>
+                </div>
+
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                  <button class="btn btn-primary btn-sm" onclick="window.app.forceCloudSync()"><i class="fas fa-cloud-arrow-up"></i> Push All to Cloud</button>
+                  <button class="btn btn-secondary btn-sm" onclick="window.app.forceCloudPull()"><i class="fas fa-cloud-arrow-down"></i> Pull from Cloud</button>
+                  <button class="btn btn-secondary btn-sm" onclick="window.app.publishAbsorptionDirect()"><i class="fas fa-paper-plane"></i> Publish to CMSys Cloud</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- CMSys Absorption Sync Bridge -->
             <div class="section-header">
               <div class="section-title"><i class="fas fa-sync-alt"></i> CMSys Attachment Sync Bridge</div>
             </div>
@@ -412,10 +507,10 @@
               <div class="panel-head"><span class="panel-title"><i class="fas fa-info-circle"></i> Sync Engine</span></div>
               <div class="panel-body">
                 <p style="font-size:0.85rem;color:var(--text-secondary);line-height:1.6;margin-bottom:12px;">
-                  Sync special project sailor attachments into the main CMSys module.
+                  Export or publish special project sailor attachments for CMSys absorption and headcount reconciliation.
                 </p>
                 <div style="margin-bottom:14px;">
-                  <textarea id="sync-payload" readonly style="width:100%;height:220px;background:var(--bg-app);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text-secondary);font-family:var(--mono);font-size:0.72rem;resize:none;line-height:1.5;">${JSON.stringify(pkg, null, 2)}</textarea>
+                  <textarea id="sync-payload" readonly style="width:100%;height:180px;background:var(--bg-app);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text-secondary);font-family:var(--mono);font-size:0.72rem;resize:none;line-height:1.5;">${JSON.stringify(pkg, null, 2)}</textarea>
                 </div>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
                   <button class="btn btn-primary btn-sm" onclick="window.app.renderSettingsView();window.app.toast('Payload refreshed!','success')"><i class="fas fa-sync"></i> Refresh</button>
@@ -940,12 +1035,41 @@
 
     updateSidebarCounts() {
       const projects = window.spsStore.projects;
+      const naval = window.spsStore.navalProjects;
+
+      // Special categories
       CATEGORIES.forEach(cat => {
         const id  = `nb-${cat.replace(/ /g,'').toLowerCase()}`;
         const cnt = projects.filter(p => p.category === cat && p.status !== 'Completed').length;
         const el  = document.getElementById(id);
         if (el) el.textContent = cnt;
       });
+
+      const spEl = document.getElementById('nb-special');
+      if (spEl) spEl.textContent = projects.length;
+
+      // Naval projects total badge
+      const nbNaval = document.getElementById('nb-naval');
+      if (nbNaval) nbNaval.textContent = naval.length;
+
+      // Naval Vote counts
+      const v2104 = document.getElementById('nb-vote-2104');
+      if (v2104) v2104.textContent = window.spsStore.getNavalProjectsByVote('2104').length;
+
+      const v2001 = document.getElementById('nb-vote-2001');
+      if (v2001) v2001.textContent = window.spsStore.getNavalProjectsByVote('2001').length;
+
+      const v2506 = document.getElementById('nb-vote-2506');
+      if (v2506) v2506.textContent = window.spsStore.getNavalProjectsByVote('2506').length;
+
+      const v1303 = document.getElementById('nb-vote-1303');
+      if (v1303) v1303.textContent = window.spsStore.getNavalProjectsByVote('1303').length;
+
+      const vNon = document.getElementById('nb-vote-non');
+      if (vNon) vNon.textContent = window.spsStore.getNavalProjectsByVote('Non-Naval').length;
+
+      const v2103 = document.getElementById('nb-vote-2103');
+      if (v2103) v2103.textContent = window.spsStore.getNavalProjectsByVote('2103').length;
     }
 
     _bindGlobalSearch() {
@@ -979,6 +1103,58 @@
     copySyncPayload() {
       const ta = document.getElementById('sync-payload');
       if (ta) { navigator.clipboard.writeText(ta.value).then(() => this.toast('Copied to clipboard!', 'success')); }
+    }
+
+    async forceCloudSync() {
+      if (!window.spsCloudSync) {
+        this.toast('Cloud sync engine not available', 'error');
+        return;
+      }
+      try {
+        this.toast('Pushing all data to Firebase cmsys-projects...', 'info');
+        const res = await window.spsCloudSync.forceSyncToCloud();
+        this.toast(`Cloud Sync Complete! (${res.count} projects synced)`, 'success');
+        this.renderSettingsView();
+      } catch (e) {
+        this.toast(`Cloud Sync Error: ${e.message}`, 'error');
+      }
+    }
+
+    async forceCloudPull() {
+      if (!window.spsCloudSync) {
+        this.toast('Cloud sync engine not available', 'error');
+        return;
+      }
+      try {
+        this.toast('Pulling latest data from Firebase cloud...', 'info');
+        await window.spsCloudSync.forcePullFromCloud();
+        this.toast('Refreshed data from cmsys-projects cloud!', 'success');
+        this.renderSettingsView();
+      } catch (e) {
+        this.toast(`Cloud Pull Error: ${e.message}`, 'error');
+      }
+    }
+
+    async publishAbsorptionDirect() {
+      if (window.cmsysBridge) {
+        await window.cmsysBridge.triggerServerRESTSync();
+        this.renderSettingsView();
+        return;
+      }
+      const atts = window.spsStore.attachments;
+      const activeProj = window.spsStore.projects[0];
+      const payload = {
+        source_system: "SPECIAL_PROJECT_SYSTEM_V1",
+        sync_timestamp: new Date().toISOString(),
+        project_meta: activeProj ? { id: activeProj.id, code: activeProj.code, title: activeProj.title } : {},
+        attached_sailors_count: atts.length,
+        attachments: atts
+      };
+      if (window.spsCloudSync) {
+        await window.spsCloudSync.publishAbsorptionPackage(payload);
+        this.toast(`Published ${atts.length} attachments to cmsys-projects!`, 'success');
+        this.renderSettingsView();
+      }
     }
 
     toast(msg, type = 'info') {

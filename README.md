@@ -1,101 +1,130 @@
-# Special Project System (SPS) — Quantity Surveying, Resource Gantt & Sailor Attachments Suite
+# SLN Project Platform — Sri Lanka Navy Civil Engineering Department
 
-The **Special Project System (SPS)** is an independent, full-stack module designed for managing specialized Naval Civil Works projects, performing Quantity Surveying & BOQ estimation, generating interactive Full Resource Gantt charts with Critical Path Method (CPM) calculation, and managing Sailor Attachments synced with the **Sailor Details API** (`ce-admin-panel2025`).
+The **SLN Project Platform** is a unified, full-stack enterprise platform developed for the **Sri Lanka Navy (SLN) Civil Engineering Department (CED)**. It integrates:
+1. **Naval Projects & Procurement Command Center (Dedicated Window)**: Capital dockyard and base engineering works financed under Government Votes (Votes 2104, 2001, 2506, 1303, Non-Naval Funds, 2103) with a comprehensive Procurement PR Register and multi-stage pipeline tracking.
+2. **Special Projects Suite (CSR & Welfare)**: Civil engineering community, religious, clean Sri Lanka, and naval welfare housing projects.
+3. **Quantity Surveying (QS) & BOQ Studio**: Full BOQ line-item management, Earned Value Management (EVM), and CPI/SPI metrics.
+4. **Full Resource Gantt Chart Studio**: Work Breakdown Structure (WBS), Critical Path Method (CPM), and daily sailor trade histograms.
+5. **Sailor Attachments & Equal Opportunity Engine**: Integrated with `ce-admin-panel2025` Firebase Realtime Database for trade allocation and fair rotation.
+6. **Dedicated Cloud RTDB (`cmsys-projects`)**: Realtime bidirectional synchronization for Naval Projects, Procurement Files, and Special Projects on `asia-southeast1`.
+7. **CMSys Logistics & V2 Bridge**: Cloud synchronization and JSON absorption packages for seamless data interoperability.
 
 ---
 
-## 🏗️ System Architecture Overview
+## 🏗️ System Architecture & Dual-Firebase Topology
 
 ```
-                                  ┌───────────────────────────────┐
-                                  │   ce-admin-panel2025 (DB #1)  │
-                                  │  Firebase Realtime Database   │
-                                  │   (Sailor Details API)        │
-                                  └──────────────┬────────────────┘
-                                                 │ (Read-Only Live Sync)
+                              ┌───────────────────────────────────────────────┐
+                              │          ce-admin-panel2025 (DB #1)           │
+                              │           Firebase Realtime Database          │
+                              │           (Personnel & Sailors Pool)          │
+                              └──────────────────────┬────────────────────────┘
+                                                     │ (Read-Only Live Sync)
+                                                     ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                   SLN PROJECT PLATFORM                                      │
+│ ┌──────────────────────────┐      ┌──────────────────────────┐      ┌─────────────────────┐ │
+│ │  NAVAL PROJECTS WINDOW   │      │  SPECIAL PROJECTS SUITE  │      │    LABOUR CENTER    │ │
+│ │  • Vote 2104 (Major)     │      │  • Religious             │      │  • 661 Sailors      │ │
+│ │  • Vote 2001 (Renovation)│      │  • Clean Sri Lanka       │      │  • Equal Rotation   │ │
+│ │  • Vote 2506 (Maritime)  │      │  • Housing               │      │  • Trade Loading    │ │
+│ │  • Vote 1303 (Maint)     │      │  • Miscellaneous         │      │                     │ │
+│ │  • Non-Naval / Funds     │      │                          │      │                     │ │
+│ │  • Vote 2103 (Machinery) │      │                          │      │                     │ │
+│ │  • Master PR Register    │      │                          │      │                     │ │
+│ └──────────────────────────┘      └──────────────────────────┘      └─────────────────────┘ │
+│                                                ▲                                            │
+│                                                │ (REST / Local JSON / SQLite / MySQL)        │
+│                                                ▼                                            │
+│                               ┌─────────────────────────────────┐                           │
+│                               │  Data Engine & Store (State v5) │                           │
+│                               └────────────────┬────────────────┘                           │
+└────────────────────────────────────────────────┼────────────────────────────────────────────┘
+                         ▲                       │ (Bi-directional Live RTDB Sync)
+                         │                       ▼
+                         │      ┌─────────────────────────────────────────┐
+                         │      │          cmsys-projects (DB #2)         │
+                         └──────┤        Firebase Realtime Database       │
+                                │   (Naval, Procurement, Special Projects)│
+                                └────────────────┬────────────────────────┘
+                                                 │ (Cross-system Absorption Package)
                                                  ▼
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                    SPECIAL PROJECT SYSTEM (SPS) MODULE                          │
-│ ┌──────────────────────┐  ┌──────────────────────────┐  ┌─────────────────────┐ │
-│ │  Quantity Surveying  │  │   Full Resource Gantt    │  │ Sailor Attachments  │ │
-│ │  (BOQ, Rate Analysis,│  │   (WBS, CPM, Timeline,   │  │ (Role Allocation,   │ │
-│ │   Earned Value EVM)  │  │   Resource Histograms)   │  │  Trade Loading)     │ │
-│ └──────────────────────┘  └──────────────────────────┘  └─────────────────────┘ │
-│                                       ▲                                         │
-│                                       │ (REST / Local JSON DB)                  │
-│                                       ▼                                         │
-│                      ┌─────────────────────────────────┐                        │
-│                      │  SPS Data Engine & Persistence  │                        │
-│                      └────────────────┬────────────────┘                        │
-└───────────────────────────────────────┼─────────────────────────────────────────┘
-                                        │ (Sync & Absorption API / Bridge)
-                                        ▼
-                       ┌─────────────────────────────────┐
-                       │          CMSys v2 Main          │
-                       │   (Absorbs Attachment Logs)     │
-                       └─────────────────────────────────┘
+                                ┌─────────────────────────────────────────┐
+                                │             CMSys Logistics             │
+                                │        (PR Procurement Mirror)          │
+                                └─────────────────────────────────────────┘
 ```
+
+> 📖 **Comprehensive Topology Reference**: See [`FIREBASE_TOPOLOGY.md`](FIREBASE_TOPOLOGY.md) for full endpoint specifications, account boundaries, and interconnections across all 6 Firebase accounts in the ecosystem (`cmsys-projects`, `ce-admin-panel2025`, `cmsys-v2-1fb05`, `ncw-ps-operations`, `ce-web-system`, `cced-water-distribution`).
 
 ---
 
-## 🚀 Key Features & Modules
+## 🚀 Dedicated Naval Projects Window Features
 
-### 1. Quantity Surveying (QS) & BOQ Studio
-- **Bill of Quantities (BOQ)** line item management with unit rates, quantities, and work item categorization (Civil, Structural, Electrical, Plumbing, Fabrication, Carpentry).
-- **Earned Value Management (EVM)** metrics calculation:
-  - **Planned Value (PV)** = Total Budget × Planned % Complete
-  - **Earned Value (EV)** = Total Budget × Actual % Complete
-  - **Actual Cost (AC)** = Incurred expenditure
-  - **Cost Performance Index (CPI)** = $\text{EV} / \text{AC}$ (Values $\ge 1.0$ indicate project is under budget)
-  - **Schedule Performance Index (SPI)** = $\text{EV} / \text{PV}$ (Values $\ge 1.0$ indicate project is ahead of schedule)
-  - **Estimate at Completion (EAC)** = $\text{BAC} / \text{CPI}$
+### 1. Capital Works & Government Votes Directory
+- **Vote 223-1-01-2104**: Construction of No.03 Slipway Hangar (NSH), 50m x 20m Steel Workshop Building (EFS), Front of Beach Security Point (SGP), Logistic & Management School (LMS).
+- **Vote 223-1-01-2001**: Major renovations for Kashyapa security fence, Vidura Marine Home, Command Wardrooms, Store Yards, Married Quarters (Peyton Terrace 01-10), SBS HQ Training facilities, NAD Waterproofing tunnels, Thissa Naval Hospital.
+- **Vote 223-1-01-2506**: Maritime and coastal infrastructure including Guide Pier Extension, Floating Dock, Gas Chlorination Plants, and Dockyard security fencing.
+- **Vote 223-1-01-1303**: Base and station annual maintenance works.
+- **Non-Naval / Funds**: Malima Hospitality works (Sobar Island Resort) and contractual projects (Paper Port Jetty).
+- **Vote 223-1-01-2103**: Heavy machinery and capital plant acquisition (CNC Plasma Cutters, Mobile Aerial Platforms).
 
-### 2. Full Resource Gantt Chart Studio
-- **Work Breakdown Structure (WBS)** hierarchy (Project $\rightarrow$ Phase $\rightarrow$ Task $\rightarrow$ Subtask $\rightarrow$ Milestone).
-- **Critical Path Method (CPM)** solver computing Early Start (ES), Early Finish (EF), Late Start (LS), Late Finish (LF), and Total Float/Slack.
-- **Resource Allocation Matrix & Trade Histograms**: Visualizes daily sailor man-days per trade (MA, CA, PA, PL, BB, RW, WE, AL, SW) and flags over-allocations.
-- **Interactive SVG Timeline**: Visualizes dependency links (Finish-to-Start FS, Start-to-Start SS) and milestone highlights.
+### 2. Master Procurement PR Register & Pipeline
+- Real-time tracking of Purchase Requisitions (PRs) from inception to stores receipt:
+  - `Processing File`: Initial requisition and specification vetting.
+  - `Awaiting Financial Approval`: Tender board and financial authority concurrence.
+  - `Order Placed`: Purchase order issued to selected supplier.
+  - `Items Dispatched`: Supplier dispatch in transit.
+  - `Items Received`: Verified and taken on-charge at Base / Dockyard stores.
+- Interactive status updates, modal inspection, and 1-click CSV export of the entire PR register.
 
-### 3. Sailor Details API & Firebase Sync Engine
-- **Read-only live integration** with `ce-admin-panel2025` Firebase Realtime Database.
-- Syncs master personnel records (Official Number, Name, Rank, Trade, Category, Special Skills, Performance Scores).
-- Realtime status fallback mode ensures seamless offline operation when network is unavailable.
+### 3. Vote Budget Allocation Matrix
+- High-level executive burn-down monitoring comparing **Vote Allocation** vs **Committed Funds** vs **Actual Expenditure** with remaining uncommitted balance.
 
-### 4. CMSys Attachment Sync & Absorption Bridge
-- **CMSys Attachment Absorption Interface**: Allows **CMSys** to absorb Special Project sailor attachment logs.
-- REST Sync API Endpoint (`GET/POST /api/api.php?action=cmsys_absorb`) and downloadable 1-click JSON absorption package.
+---
+
+## ☁️ Firebase Backend & CLI Configuration
+
+- **Target Project**: `cmsys-projects`
+- **RTDB Endpoint**: `https://cmsys-projects-default-rtdb.asia-southeast1.firebasedatabase.app`
+- **Database Rules**: [`database.rules.json`](database.rules.json) (optimized indexes on `voteNumber`, `status`, `prNumber`, etc.)
+- **Project Configuration**: [`firebase.json`](firebase.json) & [`.firebaserc`](.firebaserc)
+- **Zero-Dependency Seeder**: Run `node scripts/seed-firebase.js` to populate/verify all nodes.
 
 ---
 
 ## 📂 File Directory Structure
 
 ```
-c:\Projects\CMSys v2\SpecialProjectSystem\
-├── index.html               # Main Web App UI (Dashboard, Gantt, BOQ, Attachments, Sync)
+c:\xampp\htdocs\SP V1\
+├── index.html               # Main Web App UI (Executive Dashboard, Naval Projects, Special Projects, Labour)
+├── firebase.json            # Firebase CLI Deployment Configuration
+├── .firebaserc              # Firebase Active Project Config (cmsys-projects)
+├── database.rules.json      # Realtime Database Security & Indexing Rules
+├── FIREBASE_TOPOLOGY.md     # Cross-System Multi-Firebase Account Directory
 ├── css/
-│   ├── style.css            # Master Design System, Glassmorphism, Theme Variables
+│   ├── style.css            # Master Design System, Naval Theme Variables, Badges, Table Cards
 │   ├── gantt.css            # Resource Gantt Chart & Timeline Styling
 │   └── boq.css              # Quantity Surveying & BOQ Table Styling
 ├── js/
-│   ├── firebase-sync.js     # Firebase Realtime DB (ce-admin-panel2025) Connector
-│   ├── store.js             # Central Reactive State Store & LocalStorage Cache
+│   ├── naval-projects.js    # Dedicated Naval Projects & Procurement Command Center Module
+│   ├── store.js             # Central Reactive State Store (State v5: Naval & Special Projects)
+│   ├── app.js               # Master Application Controller, Router & Modal Handlers
+│   ├── project-detail.js    # Special Project Detail Modal Handler
+│   ├── labour-centre.js     # Labour Centre & Equal Opportunity Rotation Helper
 │   ├── gantt-engine.js      # Advanced Resource Gantt Chart & CPM Solver Engine
 │   ├── qs-boq-engine.js     # Quantity Surveying & EVM Calculation Engine
-│   ├── cmsys-bridge.js      # CMSys Absorption & Attachment Sync Engine
-│   └── app.js               # Main Controller, Router & Modal Handlers
+│   ├── firebase-sync.js     # Firebase Realtime DB (ce-admin-panel2025) Connector
+│   ├── cloud-sync.js        # Firebase Cloud Operations Sync (cmsys-projects)
+│   └── cmsys-bridge.js      # CMSys Absorption & Sync Bridge
 ├── api/
-│   ├── config.php           # Database & CORS Config
-│   ├── api.php              # REST API for Special Projects & CMSys Absorption
-│   └── database.sql         # SQL Database Schema
+│   ├── config.php           # Database & CORS Configuration
+│   ├── api.php              # REST API for Naval Projects, Special Projects & Procurement
+│   └── database.sql         # SQL Database Schema (naval_projects, procurement_files, special_projects)
 ├── data/
-│   └── sample_projects.json # Pre-loaded Initial Special Project & BOQ Dataset
+│   ├── naval_projects.json  # Master Naval Projects & Procurement PR Dataset (25 Projects, 63 PRs)
+│   └── sample_projects.json # Pre-loaded Combined Project Dataset
+├── scripts/
+│   └── seed-firebase.js     # Standalone Firebase Backend Seeder & Verification Tool
 └── README.md                # System Documentation
 ```
-
----
-
-## 🔗 How CMSys Absorbs Special Project Attachments
-
-CMSys can absorb attachment details through two pathways:
-1. **Automated REST Sync**: CMSys issues a GET request to `SpecialProjectSystem/api/api.php?action=cmsys_absorb` to retrieve attached sailor IDs, project codes, duty roles, and date ranges.
-2. **Offline JSON Package**: Click **"Download CMSys Absorption Package (.json)"** in the **CMSys Sync Bridge** tab and upload the generated JSON package directly into CMSys.
