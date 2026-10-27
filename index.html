@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SLN Project Platform | Sri Lanka Navy Civil Engineering Department</title>
-  <meta name="description" content="SLN Project Platform — Naval Capital Projects, Government Votes, Procurement Actions, and Special Civil Works Suite">
+  <title>CMSys Project | Sri Lanka Navy Dockyard Trincomalee</title>
+  <meta name="description" content="CMSys Project — Sri Lanka Navy Dockyard Trincomalee Civil Engineering Department Unified Projects, Officers Profiles, & Labour Hub">
+  <link rel="icon" type="image/png" href="assets/img/cmsys-emblem.png">
 
   <!-- Fonts & Icons -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,6 +15,7 @@
   <!-- SPS & SLN Platform Styles -->
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/gantt.css">
+  <link rel="stylesheet" href="css/progress-center.css">
 
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -27,12 +29,10 @@
   <aside class="sidebar">
     <!-- Brand -->
     <div class="sidebar-brand">
-      <div class="brand-icon" style="background:linear-gradient(135deg, #0284c7, #0369a1); display:flex; align-items:center; justify-content:center; color:#fff; font-size:1.15rem; box-shadow:0 0 15px rgba(2,132,199,0.5);">
-        <i class="fas fa-anchor"></i>
-      </div>
+      <img src="assets/img/cmsys-emblem.png" alt="CMSys Emblem" class="brand-emblem-img">
       <div class="brand-info">
-        <h1 style="letter-spacing:0.04em;">SLN CED</h1>
-        <span>Project Platform</span>
+        <h1 class="brand-title">CMSys Project</h1>
+        <span class="brand-subtitle">SLN DOCKYARD TRINCOMALEE</span>
       </div>
     </div>
 
@@ -45,6 +45,13 @@
         Dashboard
       </button>
 
+      <!-- DEDICATED CIVIL PROJECT PROGRESS & MONITORING CENTER -->
+      <button class="nav-link" data-view="progress-center" id="nav-btn-progress-center" style="color:#38bdf8; font-weight:700;">
+        <i class="fas fa-chart-line" style="color:#38bdf8;"></i>
+        Progress & Monitoring
+        <span class="nav-badge" id="nb-progress-center" style="background:rgba(56,189,248,0.2); color:#38bdf8; font-weight:800; border:1px solid rgba(56,189,248,0.4);">LIVE</span>
+      </button>
+
       <!-- SEPARATE DEDICATED WINDOW FOR NAVAL PROJECTS -->
       <button class="nav-link" data-view="naval-projects" id="nav-btn-naval" style="color:#38bdf8; font-weight:700;">
         <i class="fas fa-ship" style="color:#38bdf8;"></i>
@@ -55,13 +62,15 @@
       <button class="nav-link" data-view="projects">
         <i class="fas fa-folder-open"></i>
         Special Projects
-        <span class="nav-badge nb-purple" id="nb-special">7</span>
+        <span class="nav-badge nb-purple" id="nb-special">17</span>
       </button>
 
       <button class="nav-link" data-view="labour">
         <i class="fas fa-users"></i>
         Labour Details
+        <span class="nav-badge nb-green" id="nb-labour-total">128</span>
       </button>
+
 
       <div class="nav-section">Naval Votes</div>
 
@@ -129,11 +138,11 @@
 
       <div class="nav-section">Administration</div>
 
-      <!-- Settings View (Admin Only) -->
-      <button class="nav-link" data-view="settings">
+      <!-- Settings View (Officers Profiles & System Admin) -->
+      <button class="nav-link" data-view="settings" id="nav-btn-settings">
         <i class="fas fa-cog"></i>
         Settings
-        <span style="font-size:0.65rem;background:var(--accent);color:#07101f;padding:1px 5px;border-radius:4px;font-weight:800;margin-left:auto;">ADMIN</span>
+        <span class="nav-badge nb-gold" id="nb-settings-officers" title="12 Commissioned Officers Profiles">12</span>
       </button>
     </nav>
 
@@ -171,23 +180,32 @@
   <!-- ═══════════════════════════ MAIN CONTENT ═══════════════════════════ -->
   <div class="main">
 
-    <!-- Top Bar Header -->
+    <!-- Top Bar Header with Official CMSys Project Banner -->
     <header class="topbar">
       <div class="topbar-left">
-        <div class="page-breadcrumb">
-          <span>SLN / CED</span>
-          <i class="fas fa-chevron-right" style="font-size:0.6rem;"></i>
-          <span id="page-title">Dashboard</span>
+        <div class="system-banner">
+          <img src="assets/img/cmsys-banner-logo.png" alt="CMSys SLN Dockyard Trincomalee" class="system-banner-img">
+          <div class="banner-divider"></div>
+          <div class="banner-title-wrap">
+            <span class="banner-project-pill">CMSYS PROJECT</span>
+            <span class="banner-current-view" id="page-title">Dashboard</span>
+          </div>
         </div>
       </div>
 
       <div class="topbar-right">
-        <!-- Interactive User Profile & Naval Role Switcher -->
+        <!-- Live CMSys Sync Button -->
+        <button class="btn btn-sync" id="btn-sync-all" onclick="window.app.triggerGlobalSync()" title="Synchronize Projects, Labours & Officers across CMSys Cloud & DB">
+          <i class="fas fa-rotate"></i>
+          <span>Sync CMSys</span>
+        </button>
+
+        <!-- Interactive Officer Profile & Naval Role Switcher -->
         <div id="topbar-user-role"></div>
 
         <div class="search-wrap">
           <i class="fas fa-search"></i>
-          <input type="text" id="global-search" placeholder="Search projects...">
+          <input type="text" id="global-search" placeholder="Search projects, officers, files...">
         </div>
         <button class="btn btn-primary" onclick="window.app.openNewProjectModal()">
           <i class="fas fa-plus"></i> New Project
@@ -309,6 +327,12 @@
       </div><!-- /dashboard-view -->
 
 
+      <!-- ═══════════ PROJECT PROGRESS & MONITORING CENTER (FULL DEDICATED WINDOW) ═══════════ -->
+      <div class="view" id="progress-center-view">
+        <!-- Rendered entirely by js/progress-center.js -->
+      </div><!-- /progress-center-view -->
+
+
       <!-- ═══════════ NAVAL PROJECTS VIEW (SEPARATE DEDICATED WINDOW) ═══════════ -->
       <div class="view" id="naval-projects-view">
         <!-- Rendered entirely by js/naval-projects.js -->
@@ -342,6 +366,12 @@
       </div><!-- /labour-view -->
 
 
+      <!-- ═══════════ OFFICERS PROFILES VIEW (ONLY OFFICERS) ═══════════ -->
+      <div class="view" id="officers-view">
+        <!-- Rendered by app.js renderOfficersView() -->
+      </div><!-- /officers-view -->
+
+
       <!-- ═══════════ SETTINGS VIEW (ADMIN ONLY) ═══════════ -->
       <div class="view" id="settings-view">
         <!-- Rendered by app.js renderSettingsView() -->
@@ -354,6 +384,11 @@
 
 <!-- ═══════════════════ MODALS ═══════════════════ -->
 
+<!-- Officer Login & Authentication Modal -->
+<div class="modal-overlay" id="officer-login-modal" onclick="if(event.target===this)this.classList.remove('open')">
+  <!-- Filled dynamically by app.js openOfficerLoginModal() -->
+</div>
+
 <!-- Project Detail Modal -->
 <div class="modal-overlay" id="project-detail-overlay" onclick="if(event.target===this)window.projectDetail.close()">
   <!-- Filled by project-detail.js -->
@@ -362,6 +397,16 @@
 <!-- Generic Modal (New/Edit Project, Attach Labour, Job Card, Doc, Drive Link, Photo, Weather, User Edit) -->
 <div class="modal-overlay" id="generic-modal-overlay" onclick="if(event.target===this)this.classList.remove('open')">
   <!-- Filled dynamically -->
+</div>
+
+<!-- CMSys Master Sailor Profile Modal (Full CMSys Main Replica) -->
+<div class="modal-overlay" id="sailor-profile-modal-overlay" onclick="if(event.target===this)window.labourCentre.closeProfileModal()">
+  <!-- Rendered dynamically by labour-centre.js openProfileModal() -->
+</div>
+
+<!-- Sailor ID Photo Lightbox Modal (Enlarge / Minimize Photo) -->
+<div class="modal-overlay" id="sailor-lightbox-modal-overlay" onclick="if(event.target===this)window.labourCentre.closeLightbox()">
+  <!-- Rendered dynamically by labour-centre.js openLightbox() -->
 </div>
 
 <!-- Toast Notifications -->
@@ -377,6 +422,7 @@
 <script src="js/project-detail.js"></script>
 <script src="js/labour-centre.js"></script>
 <script src="js/naval-projects.js"></script>
+<script src="js/progress-center.js"></script>
 <script src="js/app.js"></script>
 
 </body>

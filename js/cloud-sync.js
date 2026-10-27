@@ -192,6 +192,23 @@
           }
         }
       });
+
+      // 8. Listen to Officers Registry
+      this.db.ref('officers').on('value', snap => {
+        if (this.isRemoteUpdating) return;
+        const val = snap.val();
+        if (val) {
+          const offArr = Array.isArray(val) ? val.filter(Boolean) : Object.values(val);
+          if (offArr.length > 0) {
+            this.isRemoteUpdating = true;
+            try {
+              window.spsStore.setOfficers(offArr);
+            } finally {
+              setTimeout(() => { this.isRemoteUpdating = false; }, 150);
+            }
+          }
+        }
+      });
     }
 
     _attachLocalStoreSubscriber() {
@@ -240,6 +257,14 @@
           const attachments = window.spsStore.attachments;
           await this.db.ref('special_project_attachments').set(attachments);
           await this.db.ref('attachments').set(attachments); // mirror
+          this._touchMeta();
+        }
+
+        // Officers mutation
+        if (['USER_ADDED', 'USER_UPDATED', 'USER_DELETED', 'OFFICERS_SET'].includes(event)) {
+          const officers = window.spsStore.officers;
+          await this.db.ref('officers').set(officers);
+          await this.db.ref('user_profiles').set(officers);
           this._touchMeta();
         }
 
@@ -294,6 +319,7 @@
         const j  = window.spsStore.jobCards;
         const d  = window.spsStore.documents;
         const w  = window.spsStore.weatherLogs;
+        const o  = window.spsStore.officers;
 
         await Promise.all([
           this.db.ref('naval_projects').set(np),
@@ -305,18 +331,21 @@
           this.db.ref('job_cards').set(j),
           this.db.ref('documents').set(d),
           this.db.ref('weather_logs').set(w),
+          this.db.ref('officers').set(o),
+          this.db.ref('user_profiles').set(o),
           this.db.ref('system_status').update({
             last_manual_sync: new Date().toISOString(),
             status: 'online',
             total_naval_projects: np.length,
             total_procurement_files: pf.length,
-            total_special_projects: p.length
+            total_special_projects: p.length,
+            total_officers: o.length
           })
         ]);
 
         this.lastSync = new Date();
         this._updateUI(true, 'Full Sync Complete');
-        return { success: true, count: np.length + p.length };
+        return { success: true, count: np.length + p.length + o.length };
       } finally {
         setTimeout(() => { this.isRemoteUpdating = false; }, 200);
       }
@@ -358,6 +387,14 @@
       if (a) {
         const arr = Array.isArray(a) ? a.filter(Boolean) : Object.values(a);
         window.spsStore.setAttachments(arr);
+      }
+
+      // 5. Pull Officers
+      const offSnap = await this.db.ref('officers').once('value');
+      const offVal = offSnap.val();
+      if (offVal) {
+        const arr = Array.isArray(offVal) ? offVal.filter(Boolean) : Object.values(offVal);
+        if (arr.length > 0) window.spsStore.setOfficers(arr);
       }
 
       this.lastSync = new Date();

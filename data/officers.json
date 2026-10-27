@@ -1,0 +1,373 @@
+[
+    {
+        "id": "OFF-001",
+        "username": "kmau.kahandawa",
+        "alt_usernames": [
+            "KMAU Kahandawa",
+            "kmau",
+            "admin"
+        ],
+        "name": "Lt Cdr KMAU Kahandawa",
+        "rank": "Lt Commander",
+        "serviceNo": "NRC 3542",
+        "appointment": "SCE (W/W) & System Administrator",
+        "department": "CSLOG / CE",
+        "category": "Officer",
+        "role": "admin",
+        "seniority": 1,
+        "email": "kmau.kahandawa@navy.lk",
+        "phone": "071-8849201",
+        "officeNo": "026-2224501",
+        "status": "Active",
+        "assignedProjects": [
+            "ALL",
+            "NSH",
+            "EFS",
+            "ANDAMKULAM",
+            "SOBA ISLAND"
+        ],
+        "passwordHash": "h$1n5nc4g$r",
+        "permissions": [
+            "full_admin",
+            "approve_projects",
+            "allocate_labour",
+            "procurement_vetting",
+            "cloud_sync"
+        ]
+    },
+    {
+        "id": "OFF-002",
+        "username": "bgl.balasuriya",
+        "alt_usernames": [
+            "BGL Balasuriya",
+            "balasuriya"
+        ],
+        "name": "Capt (S) BGL Balasuriya",
+        "rank": "Captain (S)",
+        "serviceNo": "NRC 1843",
+        "appointment": "CCED (East)",
+        "department": "Civil Engineering",
+        "category": "Officer",
+        "role": "cced_e",
+        "seniority": 2,
+        "email": "cced.east@navy.lk",
+        "phone": "071-2244101",
+        "officeNo": "026-2224500",
+        "status": "Active",
+        "assignedProjects": [
+            "ALL",
+            "LMS",
+            "NSH",
+            "NELUGALA TEMPLE",
+            "KUTTIYARAMA"
+        ],
+        "passwordHash": "h$1n5nc4g$r",
+        "permissions": [
+            "command_approval",
+            "vote_allocation",
+            "all_projects_view",
+            "signal_issuance"
+        ]
+    },
+    {
+        "id": "OFF-003",
+        "username": "r.perera",
+        "alt_usernames": [
+            "Cdr R. Perera",
+            "rperera"
+        ],
+        "name": "Cdr R. Perera",
+        "rank": "Commander",
+        "serviceNo": "SVC/1234",
+        "appointment": "CSLOG",
+        "department": "CSLOG",
+        "category": "Officer",
+        "role": "cceo_e",
+        "seniority": 3,
+        "email": "cslog.east@navy.lk",
+        "phone": "071-3345102",
+        "officeNo": "026-2224510",
+        "status": "Active",
+        "assignedProjects": [
+            "NSH",
+            "Vote 2104 Projects"
+        ],
+        "passwordHash": "h$1n5nc4g$r",
+        "permissions": [
+            "procurement_approval",
+            "store_requisition",
+            "project_supervision"
+        ]
+    },
+    {
+        "id": "OFF-004",
+        "username": "a.wickrama",
+        "alt_usernames": [
+            "Lt Cdr A. Wickrama",
+            "awickrama"
+        ],
+        "name": "Lt Cdr A. Wickrama",
+        "rank": "Lt Commander",
+        "serviceNo": "SVC/2222",
+        "appointment": "CCEO (East)",
+        "department": "Civil Engineering",
+        "category": "Officer",
+        "role": "cceo_e",
+        "seniority": 4,
+        "email": "cceo.east@navy.lk",
+        "phone": "071-4456103",
+        "officeNo": "026-2224512",
+        "status": "Active",
+        "assignedProjects": [
+            "Vote 2001",
+            "Vote 2506",
+            "ANDAMKULAM"
+        ],
+        "passwordHash": "h$1n5nc4g$r",
+        "permissions": [
+            "site_execution",
+            "labour_allocation",
+            "work_orders_approval"
+        ]
+    },
+    {
+        "id": "OFF-005",
+        "username": "k.silva",
+        "alt_usernames": [
+            "Lt Cdr K. Silva",
+            "ksilva"
+        ],
+        "name": "Lt Cdr K. Silva",
+        "rank": "Lt Commander",
+        "serviceNo": "SVC/3456",
+        "appointment": "ASO (East)",
+        "department": "CSLOG",
+        "category": "Officer",
+        "role": "cceo_e",
+        "seniority": 5,
+        "email": "aso.east@navy.lk",
+        "phone": "071-5567104",
+        "officeNo": "026-2224515",
+        "status": "Active",
+        "assignedProjects": [
+            "Store Yard",
+            "General Stores",
+            "Procurement Pipeline"
+        ],
+        "passwordHash": "h$1n5nc4g$r",
+        "permissions": [
+            "inventory_control",
+            "nav254_authorization",
+            "pr_clearance"
+        ]
+    },
+    {
+        "id": "OFF-006",
+        "username": "m.fernando",
+        "alt_usernames": [
+            "Lt M. Fernando",
+            "mfernando"
+        ],
+        "name": "Lt M. Fernando",
+        "rank": "Lieutenant",
+        "serviceNo": "SVC/2345",
+        "appointment": "CLOGD",
+        "department": "CSLOG",
+        "category": "Officer",
+        "role": "ce_ww",
+        "seniority": 6,
+        "email": "clogd.dockyard@navy.lk",
+        "phone": "071-6678105",
+        "officeNo": "026-2224520",
+        "status": "Active",
+        "assignedProjects": [
+            "EFS",
+            "SSSO Main Gate"
+        ],
+        "passwordHash": "h$1n5nc4g$r",
+        "permissions": [
+            "site_management",
+            "material_receipt",
+            "daily_labour_logging"
+        ]
+    },
+    {
+        "id": "OFF-007",
+        "username": "d.rajapaksa",
+        "alt_usernames": [
+            "Lt D. Rajapaksa",
+            "drajapaksa"
+        ],
+        "name": "Lt D. Rajapaksa",
+        "rank": "Lieutenant",
+        "serviceNo": "SVC/3333",
+        "appointment": "SCE (Marine)",
+        "department": "Civil Engineering",
+        "category": "Officer",
+        "role": "sce_ww",
+        "seniority": 7,
+        "email": "sce.marine@navy.lk",
+        "phone": "071-7789106",
+        "officeNo": "026-2224522",
+        "status": "Active",
+        "assignedProjects": [
+            "SGP",
+            "Guide Pier",
+            "Floating Dock"
+        ],
+        "passwordHash": "h$1n5nc4g$r",
+        "permissions": [
+            "marine_works_control",
+            "coastal_engineering",
+            "job_card_signoff"
+        ]
+    },
+    {
+        "id": "OFF-008",
+        "username": "n.gunawardena",
+        "alt_usernames": [
+            "Lt N. Gunawardena",
+            "ngunawardena"
+        ],
+        "name": "Lt N. Gunawardena",
+        "rank": "Lieutenant",
+        "serviceNo": "SVC/4444",
+        "appointment": "SCE (Planning & Progress)",
+        "department": "Civil Engineering",
+        "category": "Officer",
+        "role": "sce_ww",
+        "seniority": 8,
+        "email": "sce.pp@navy.lk",
+        "phone": "071-8890107",
+        "officeNo": "026-2224525",
+        "status": "Active",
+        "assignedProjects": [
+            "WBS Planning",
+            "Vote Monitoring",
+            "Gantt Tracking"
+        ],
+        "passwordHash": "h$1n5nc4g$r",
+        "permissions": [
+            "wbs_scheduling",
+            "progress_tracking",
+            "evm_monitoring"
+        ]
+    },
+    {
+        "id": "OFF-009",
+        "username": "s.bandara",
+        "alt_usernames": [
+            "Lt Cdr S. Bandara",
+            "sbandara"
+        ],
+        "name": "Lt Cdr S. Bandara",
+        "rank": "Lt Commander",
+        "serviceNo": "NRX 1042",
+        "appointment": "APO (East)",
+        "department": "CSLOG",
+        "category": "Officer",
+        "role": "cceo_e",
+        "seniority": 9,
+        "email": "apo.east@navy.lk",
+        "phone": "071-9901108",
+        "officeNo": "026-2224530",
+        "status": "Active",
+        "assignedProjects": [
+            "Procurement Files",
+            "Tenders",
+            "Vote 2103"
+        ],
+        "passwordHash": "h$1n5nc4g$r",
+        "permissions": [
+            "purchasing_orders",
+            "supplier_negotiation",
+            "tender_evaluations"
+        ]
+    },
+    {
+        "id": "OFF-010",
+        "username": "t.jayasuriya",
+        "alt_usernames": [
+            "Capt T. Jayasuriya",
+            "tjayasuriya"
+        ],
+        "name": "Capt T. Jayasuriya",
+        "rank": "Captain",
+        "serviceNo": "NRC 1120",
+        "appointment": "Project Director LMS",
+        "department": "CE / Naval Academy",
+        "category": "Officer",
+        "role": "cced_e",
+        "seniority": 10,
+        "email": "lms.project@navy.lk",
+        "phone": "071-1122334",
+        "officeNo": "026-2224535",
+        "status": "Active",
+        "assignedProjects": [
+            "LMS (Vote 2104)"
+        ],
+        "passwordHash": "h$1n5nc4g$r",
+        "permissions": [
+            "capital_works_director",
+            "site_command"
+        ]
+    },
+    {
+        "id": "OFF-011",
+        "username": "cbl.chandradasa",
+        "alt_usernames": [
+            "Lt Cdr CBL Chandradasa",
+            "chandradasa"
+        ],
+        "name": "Lt Cdr CBL Chandradasa",
+        "rank": "Lt Commander",
+        "serviceNo": "NRX 2890",
+        "appointment": "Housing Project Director",
+        "department": "Civil Engineering",
+        "category": "Officer",
+        "role": "ce_ww",
+        "seniority": 11,
+        "email": "chandradasa.cbl@navy.lk",
+        "phone": "071-2233445",
+        "officeNo": "026-2224540",
+        "status": "Active",
+        "assignedProjects": [
+            "SP-HOU-005",
+            "Naval Welfare Housing"
+        ],
+        "passwordHash": "h$1n5nc4g$r",
+        "permissions": [
+            "housing_supervision",
+            "welfare_works"
+        ]
+    },
+    {
+        "id": "OFF-012",
+        "username": "dulanjana",
+        "alt_usernames": [
+            "Lt Cdr Dulanjana",
+            "dulanjana.nrx"
+        ],
+        "name": "Lt Cdr Dulanjana",
+        "rank": "Lt Commander",
+        "serviceNo": "NRX 3467",
+        "appointment": "Welfare Housing Officer",
+        "department": "Civil Engineering",
+        "category": "Officer",
+        "role": "ce_ww",
+        "seniority": 12,
+        "email": "dulanjana.nrx3467@navy.lk",
+        "phone": "071-3344556",
+        "officeNo": "026-2224542",
+        "status": "Active",
+        "assignedProjects": [
+            "SP-HOU-006",
+            "Welfare Housing"
+        ],
+        "passwordHash": "h$1n5nc4g$r",
+        "permissions": [
+            "housing_supervision",
+            "welfare_works"
+        ]
+    }
+]

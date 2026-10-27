@@ -1,0 +1,1130 @@
+/* ===================================================================
+   SLN Civil Engineering Department — Project Progress & Monitoring Center
+   Advanced Full-Screen Civil Engineering & Naval Infrastructure PM Hub
+   WBS, Critical Path Gantt, Material Take-Off (MTO), Labour & Plant Management
+   =================================================================== */
+
+.pc-container {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 100%;
+  animation: fadeIn 0.25s ease;
+}
+
+/* ── Top Command Banner ── */
+.pc-hero-banner {
+  background: linear-gradient(135deg, #0d172b 0%, #13223e 60%, #182b4f 100%);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: var(--radius-lg, 12px);
+  padding: 20px 24px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+}
+
+.pc-hero-banner::after {
+  content: "";
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 220px;
+  height: 220px;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.12) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.pc-hero-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.pc-hero-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.pc-badge-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pc-badge-navy {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+}
+
+.pc-badge-vote {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.pc-badge-active {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.35);
+}
+
+.pc-project-title {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #f8fafc;
+  margin: 4px 0 6px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pc-project-sub {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.pc-project-sub span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pc-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.pc-selector-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  border-radius: var(--radius-md, 8px);
+  padding: 6px 12px;
+}
+
+.pc-selector-wrap label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #38bdf8;
+  text-transform: uppercase;
+}
+
+.pc-selector-wrap select {
+  background: transparent;
+  border: none;
+  color: #f1f5f9;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  max-width: 340px;
+}
+
+.pc-selector-wrap select option {
+  background: #0f1829;
+  color: #f1f5f9;
+}
+
+/* ── KPI Grid ── */
+.pc-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+}
+
+.pc-kpi-card {
+  background: var(--bg-card, #0f1829);
+  border: 1px solid var(--border, rgba(255,255,255,0.08));
+  border-radius: var(--radius-md, 8px);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.pc-kpi-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(56, 189, 248, 0.35);
+}
+
+.pc-kpi-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: #38bdf8;
+}
+
+.pc-kpi-card.kpi-success::before { background: #22c55e; }
+.pc-kpi-card.kpi-warning::before { background: #f59e0b; }
+.pc-kpi-card.kpi-danger::before  { background: #ef4444; }
+.pc-kpi-card.kpi-purple::before  { background: #a855f7; }
+
+.pc-kpi-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.pc-kpi-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #94a3b8;
+  letter-spacing: 0.5px;
+}
+
+.pc-kpi-icon {
+  font-size: 1rem;
+  color: #38bdf8;
+  opacity: 0.8;
+}
+
+.pc-kpi-value {
+  font-size: 1.4rem;
+  font-weight: 800;
+  font-family: var(--mono, 'JetBrains Mono', monospace);
+  color: #f8fafc;
+  line-height: 1.2;
+}
+
+.pc-kpi-footer {
+  font-size: 0.72rem;
+  color: #64748b;
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── Tab Navigation ── */
+.pc-tabs-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid var(--border, rgba(255,255,255,0.08));
+  border-radius: var(--radius-md, 8px);
+  padding: 6px;
+  overflow-x: auto;
+}
+
+.pc-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm, 6px);
+  background: transparent;
+  border: 1px solid transparent;
+  color: #94a3b8;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.pc-tab-btn:hover {
+  color: #f1f5f9;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.pc-tab-btn.active {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.35);
+  font-weight: 700;
+}
+
+.pc-tab-btn .badge-pill {
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 0.68rem;
+  background: rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+}
+
+.pc-tab-btn.active .badge-pill {
+  background: rgba(56, 189, 248, 0.3);
+  color: #38bdf8;
+}
+
+/* ── Tab Content Container ── */
+.pc-tab-pane {
+  display: none;
+  animation: fadeIn 0.2s ease;
+}
+
+.pc-tab-pane.active {
+  display: block;
+}
+
+/* ══════════════════════════════════════════════════════════
+   TAB 1: GANTT CHART STUDIO & WBS TIMELINE
+   ══════════════════════════════════════════════════════════ */
+.pc-gantt-board {
+  background: var(--bg-card, #0f1829);
+  border: 1px solid var(--border, rgba(255,255,255,0.08));
+  border-radius: var(--radius-lg, 12px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.pc-gantt-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 18px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--border, rgba(255,255,255,0.08));
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.pc-gantt-legend {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: 0.72rem;
+  color: #94a3b8;
+}
+
+.pc-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pc-legend-swatch {
+  width: 12px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+.swatch-critical { background: #ef4444; }
+.swatch-normal   { background: #38bdf8; }
+.swatch-complete { background: #22c55e; }
+.swatch-milestone{ width: 10px; height: 10px; transform: rotate(45deg); background: #f59e0b; }
+
+.pc-gantt-zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pc-zoom-btn {
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: var(--bg-surface, #1a2540);
+  border: 1px solid var(--border, rgba(255,255,255,0.08));
+  color: #94a3b8;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.pc-zoom-btn.active, .pc-zoom-btn:hover {
+  background: #38bdf8;
+  color: #07101f;
+  border-color: #38bdf8;
+}
+
+/* Gantt Split View */
+.pc-gantt-split {
+  display: grid;
+  grid-template-columns: 420px 1fr;
+  min-height: 480px;
+  overflow: hidden;
+  position: relative;
+}
+
+@media (max-width: 1100px) {
+  .pc-gantt-split {
+    grid-template-columns: 320px 1fr;
+  }
+}
+
+/* Left WBS List */
+.pc-wbs-list {
+  background: #0c1424;
+  border-right: 1px solid var(--border, rgba(255,255,255,0.08));
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  max-height: 600px;
+}
+
+.pc-wbs-header {
+  height: 42px;
+  background: #111d33;
+  border-bottom: 1px solid var(--border, rgba(255,255,255,0.08));
+  display: grid;
+  grid-template-columns: 2.2fr 0.8fr 1fr;
+  align-items: center;
+  padding: 0 14px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #94a3b8;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.pc-wbs-row {
+  height: 40px;
+  display: grid;
+  grid-template-columns: 2.2fr 0.8fr 1fr;
+  align-items: center;
+  padding: 0 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  font-size: 0.78rem;
+  color: #cbd5e1;
+  transition: background 0.15s;
+}
+
+.pc-wbs-row:hover {
+  background: rgba(56, 189, 248, 0.06);
+}
+
+.pc-wbs-row.is-phase {
+  background: rgba(255, 255, 255, 0.03);
+  font-weight: 700;
+  color: #38bdf8;
+}
+
+.pc-wbs-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pc-wbs-name.indent-1 { padding-left: 18px; }
+.pc-wbs-name.indent-2 { padding-left: 32px; font-size: 0.74rem; color: #94a3b8; }
+
+.pc-wbs-dur {
+  font-family: var(--mono, monospace);
+  font-size: 0.74rem;
+  color: #94a3b8;
+}
+
+.pc-wbs-prog-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pc-wbs-prog-bar {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.pc-wbs-prog-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: #38bdf8;
+}
+
+.pc-wbs-prog-fill.fill-critical { background: #ef4444; }
+.pc-wbs-prog-fill.fill-complete { background: #22c55e; }
+
+.pc-wbs-prog-text {
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-family: var(--mono, monospace);
+  color: #f1f5f9;
+  min-width: 30px;
+  text-align: right;
+}
+
+/* Right Timeline Canvas */
+.pc-gantt-timeline-wrap {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 600px;
+  position: relative;
+  background: #090f1e;
+}
+
+.pc-gantt-timeline-inner {
+  position: relative;
+  min-height: 100%;
+}
+
+.pc-timeline-header-row {
+  height: 42px;
+  background: #111d33;
+  border-bottom: 1px solid var(--border, rgba(255,255,255,0.08));
+  display: flex;
+  position: sticky;
+  top: 0;
+  z-index: 4;
+}
+
+.pc-time-cell {
+  flex-shrink: 0;
+  height: 100%;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  font-size: 0.68rem;
+  color: #94a3b8;
+  padding: 0 4px;
+  text-align: center;
+}
+
+.pc-time-cell.is-today {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  font-weight: 700;
+}
+
+.pc-timeline-row {
+  height: 40px;
+  position: relative;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.pc-timeline-row:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.pc-gantt-bar {
+  position: absolute;
+  top: 8px;
+  height: 24px;
+  border-radius: 4px;
+  background: rgba(56, 189, 248, 0.25);
+  border: 1px solid #38bdf8;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  overflow: hidden;
+  z-index: 2;
+}
+
+.pc-gantt-bar:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3);
+  border-color: #7dd3fc;
+  z-index: 3;
+}
+
+.pc-gantt-bar.is-critical {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: #ef4444;
+}
+
+.pc-gantt-bar.is-critical:hover {
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
+  border-color: #f87171;
+}
+
+.pc-gantt-bar.is-complete {
+  background: rgba(34, 197, 94, 0.25);
+  border-color: #22c55e;
+}
+
+.pc-bar-progress {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  background: rgba(56, 189, 248, 0.45);
+  pointer-events: none;
+}
+
+.pc-gantt-bar.is-critical .pc-bar-progress {
+  background: rgba(239, 68, 68, 0.45);
+}
+
+.pc-gantt-bar.is-complete .pc-bar-progress {
+  background: rgba(34, 197, 94, 0.45);
+}
+
+.pc-bar-label {
+  position: relative;
+  z-index: 2;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #f8fafc;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pc-milestone-marker {
+  position: absolute;
+  top: 13px;
+  width: 14px;
+  height: 14px;
+  transform: rotate(45deg);
+  background: #f59e0b;
+  border: 1px solid #fbbf24;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+  cursor: pointer;
+  z-index: 3;
+}
+
+.pc-today-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #38bdf8;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.8);
+  pointer-events: none;
+  z-index: 4;
+}
+
+.pc-today-tag {
+  position: absolute;
+  top: 2px;
+  left: -20px;
+  background: #38bdf8;
+  color: #07101f;
+  font-size: 0.62rem;
+  font-weight: 800;
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+
+/* ══════════════════════════════════════════════════════════
+   TAB 2: DETAILED CIVIL TASKING & WORK PACKAGES
+   ══════════════════════════════════════════════════════════ */
+.pc-task-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 16px;
+}
+
+.pc-phase-card {
+  background: var(--bg-card, #0f1829);
+  border: 1px solid var(--border, rgba(255,255,255,0.08));
+  border-radius: var(--radius-lg, 12px);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  position: relative;
+}
+
+.pc-phase-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding-bottom: 10px;
+}
+
+.pc-phase-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pc-phase-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+}
+
+.pc-phase-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.pc-phase-prog {
+  font-size: 0.85rem;
+  font-weight: 800;
+  font-family: var(--mono, monospace);
+  color: #38bdf8;
+}
+
+.pc-task-item {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pc-task-item:hover {
+  border-color: rgba(56, 189, 248, 0.2);
+  background: rgba(56, 189, 248, 0.02);
+}
+
+.pc-task-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.pc-task-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.pc-task-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 0.72rem;
+  color: #94a3b8;
+}
+
+.pc-task-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  background: rgba(255, 255, 255, 0.05);
+  color: #cbd5e1;
+}
+
+.pc-task-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.pc-prog-slider {
+  flex: 1;
+  height: 4px;
+  accent-color: #38bdf8;
+  cursor: pointer;
+}
+
+/* ══════════════════════════════════════════════════════════
+   TAB 3: MATERIAL REQUIREMENTS & MTO RECONCILIATION
+   ══════════════════════════════════════════════════════════ */
+.pc-mat-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 18px;
+}
+
+@media (max-width: 1024px) {
+  .pc-mat-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pc-mat-table-card {
+  background: var(--bg-card, #0f1829);
+  border: 1px solid var(--border, rgba(255,255,255,0.08));
+  border-radius: var(--radius-lg, 12px);
+  padding: 18px;
+  overflow-x: auto;
+}
+
+.pc-mat-summary-card {
+  background: var(--bg-card, #0f1829);
+  border: 1px solid var(--border, rgba(255,255,255,0.08));
+  border-radius: var(--radius-lg, 12px);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+
+.pc-table th {
+  background: #111d33;
+  color: #94a3b8;
+  text-align: left;
+  padding: 10px 12px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border, rgba(255,255,255,0.08));
+}
+
+.pc-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  color: #cbd5e1;
+}
+
+.pc-table tr:hover td {
+  background: rgba(56, 189, 248, 0.04);
+}
+
+.pc-stock-bar-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pc-stock-bar {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+
+.pc-stock-bar-fill {
+  height: 100%;
+  background: #10b981;
+  border-radius: 3px;
+}
+
+.pc-stock-bar-fill.bar-warning { background: #f59e0b; }
+.pc-stock-bar-fill.bar-danger  { background: #ef4444; }
+
+.pc-mat-status-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.mat-status-ok { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+.mat-status-low { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+.mat-status-critical { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+
+/* ══════════════════════════════════════════════════════════
+   TAB 4: LABOUR REQUIREMENTS & WORKFORCE GANGS
+   ══════════════════════════════════════════════════════════ */
+.pc-labour-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.pc-trade-card {
+  background: var(--bg-card, #0f1829);
+  border: 1px solid var(--border, rgba(255,255,255,0.08));
+  border-radius: var(--radius-lg, 12px);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pc-trade-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pc-trade-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.pc-trade-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+}
+
+.trade-icon-ma { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+.trade-icon-ca { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+.trade-icon-we { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+.trade-icon-pa { background: rgba(168, 85, 247, 0.15); color: #a855f7; }
+.trade-icon-pl { background: rgba(6, 182, 212, 0.15); color: #06b6d4; }
+.trade-icon-el { background: rgba(234, 179, 8, 0.15); color: #eab308; }
+.trade-icon-bb { background: rgba(20, 184, 166, 0.15); color: #14b8a6; }
+.trade-icon-ul { background: rgba(148, 163, 184, 0.15); color: #94a3b8; }
+
+.pc-trade-counts {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-family: var(--mono, monospace);
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #f8fafc;
+}
+
+.pc-trade-counts span {
+  font-size: 0.72rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.pc-sailors-attached-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 140px;
+  overflow-y: auto;
+}
+
+.pc-sailor-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 6px;
+  font-size: 0.72rem;
+}
+
+/* ══════════════════════════════════════════════════════════
+   TAB 5: RESOURCES, HEAVY PLANT & MACHINERY
+   ══════════════════════════════════════════════════════════ */
+.pc-plant-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap: 16px;
+}
+
+.pc-plant-card {
+  background: var(--bg-card, #0f1829);
+  border: 1px solid var(--border, rgba(255,255,255,0.08));
+  border-radius: var(--radius-lg, 12px);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pc-plant-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.pc-plant-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.pc-plant-type {
+  font-size: 0.72rem;
+  color: #94a3b8;
+}
+
+.pc-plant-status {
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.plant-status-active { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
+.plant-status-idle   { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+.plant-status-maint  { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+
+.pc-plant-stats-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  padding: 8px;
+  border-radius: 6px;
+}
+
+.pc-plant-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pc-plant-stat label {
+  font-size: 0.65rem;
+  color: #64748b;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.pc-plant-stat span {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #cbd5e1;
+  font-family: var(--mono, monospace);
+}
+
+/* ══════════════════════════════════════════════════════════
+   TAB 6: EVM & S-CURVE DIAGNOSTIC DASHBOARD
+   ══════════════════════════════════════════════════════════ */
+.pc-evm-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 18px;
+}
+
+@media (max-width: 1024px) {
+  .pc-evm-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pc-scurve-card {
+  background: var(--bg-card, #0f1829);
+  border: 1px solid var(--border, rgba(255,255,255,0.08));
+  border-radius: var(--radius-lg, 12px);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.pc-scurve-canvas-wrap {
+  width: 100%;
+  height: 280px;
+  background: #090f1e;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.pc-evm-metrics-card {
+  background: var(--bg-card, #0f1829);
+  border: 1px solid var(--border, rgba(255,255,255,0.08));
+  border-radius: var(--radius-lg, 12px);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pc-metric-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 6px;
+  border-left: 3px solid #38bdf8;
+}
+
+.pc-metric-row.is-green { border-color: #22c55e; }
+.pc-metric-row.is-amber { border-color: #f59e0b; }
+.pc-metric-row.is-red   { border-color: #ef4444; }
+
+.pc-metric-label {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.pc-metric-val {
+  font-size: 0.88rem;
+  font-weight: 800;
+  font-family: var(--mono, monospace);
+  color: #f8fafc;
+}
+
+/* ══════════════════════════════════════════════════════════
+   TAB 7: QUALITY (QA/QC) & WEATHER LOGS
+   ══════════════════════════════════════════════════════════ */
+.pc-qa-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+@media (max-width: 900px) {
+  .pc-qa-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pc-qa-card {
+  background: var(--bg-card, #0f1829);
+  border: 1px solid var(--border, rgba(255,255,255,0.08));
+  border-radius: var(--radius-lg, 12px);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pc-weather-pill {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+}
+
+.pc-weather-icon {
+  font-size: 1.4rem;
+  color: #38bdf8;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}

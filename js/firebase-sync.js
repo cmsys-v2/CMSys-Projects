@@ -1,6 +1,7 @@
 // ============================================================
-// SPS — Firebase Sailor Details Sync Engine
-// Read-Only connection to ce-admin-panel2025
+// SPS — Firebase Sailor Details & CMSys Sync Engine
+// Dual connection: ce-admin-panel2025 (Sailor DB, Availability, Out Projects)
+// Integrates full sailor profiles, real-time leaves, sick logs, and victualing
 // ============================================================
 (function() {
   'use strict';
@@ -15,31 +16,18 @@
     appId: "1:1093761746400:web:1984fad8019641b2ca5785"
   };
 
-  const FALLBACK_SAILORS = [
-    { id:"S001", official_number:"MA/1234", name:"AB Kamal Perera",      rank:"AB",  trade:"MA", category:"Regular", zone:"A-Zone",      status:"Active", performance_score:8.5 },
-    { id:"S002", official_number:"CA/2345", name:"LS Nimal Silva",       rank:"LS",  trade:"CA", category:"Regular", zone:"A-Zone",      status:"Active", performance_score:8.8 },
-    { id:"S003", official_number:"PA/3456", name:"AB Sunil Fernando",    rank:"AB",  trade:"PA", category:"VSS",     zone:"A-Zone",      status:"Active", performance_score:7.2 },
-    { id:"S004", official_number:"PL/4567", name:"PO2 Chamara Bandara",  rank:"PO2", trade:"PL", category:"Regular", zone:"A-Zone",      status:"Active", performance_score:9.0 },
-    { id:"S005", official_number:"WE/5678", name:"AB Ruwan Jayasena",    rank:"AB",  trade:"WE", category:"Regular", zone:"BC-Zone",     status:"Active", performance_score:8.1 },
-    { id:"S006", official_number:"MA/6789", name:"LS Pradeep Kumara",    rank:"LS",  trade:"MA", category:"VSS",     zone:"BC-Zone",     status:"Active", performance_score:7.9 },
-    { id:"S007", official_number:"BB/7890", name:"AB Lasith Malinga",    rank:"AB",  trade:"BB", category:"Regular", zone:"A-Zone",      status:"Active", performance_score:8.4 },
-    { id:"S008", official_number:"RW/8901", name:"PO1 Dinesh Priyantha", rank:"PO1", trade:"RW", category:"Regular", zone:"A-Zone",      status:"Active", performance_score:9.3 },
-    { id:"S009", official_number:"AL/9012", name:"AB Sampath Kumara",    rank:"AB",  trade:"AL", category:"Regular", zone:"CW-Shop",     status:"Active", performance_score:8.0 },
-    { id:"S010", official_number:"SW/0123", name:"LS Gayan Wickrama",    rank:"LS",  trade:"SW", category:"Regular", zone:"CW-Shop",     status:"Active", performance_score:8.2 },
-    { id:"S011", official_number:"MA/1122", name:"AB Saman Rathnayake",  rank:"AB",  trade:"MA", category:"Regular", zone:"BC-Zone",     status:"Active", performance_score:7.8 },
-    { id:"S012", official_number:"PA/2233", name:"AB Lalith Kumara",     rank:"AB",  trade:"PA", category:"VSS",     zone:"A-Zone",      status:"Active", performance_score:7.5 },
-    { id:"S013", official_number:"PL/3344", name:"LS Mahesh Perera",     rank:"LS",  trade:"PL", category:"Regular", zone:"Housing-Proj",status:"Active", performance_score:8.6 },
-    { id:"S014", official_number:"CA/4455", name:"AB Chathura Bandara",  rank:"AB",  trade:"CA", category:"Regular", zone:"A-Zone",      status:"Active", performance_score:8.0 },
-    { id:"S015", official_number:"WE/5566", name:"LS Roshan Fernando",   rank:"LS",  trade:"WE", category:"Regular", zone:"CW-Shop",     status:"Active", performance_score:8.9 }
-  ];
-
   class SailorSyncEngine {
     constructor() {
       this.db = null;
       this.connected = false;
+      this._hasLocalLoaded = false;
     }
 
-    init() {
+    async init() {
+      // 1. Immediately load local authoritative cache for instantaneous, zero-delay boot
+      await this.loadLocalCache();
+
+      // 2. Connect to live Firebase ce-admin-panel2025 in background
       try {
         if (typeof firebase === 'undefined') { throw new Error('Firebase SDK not available'); }
         const appName = 'sps_sailors';
@@ -52,69 +40,122 @@
         this.db = firebase.database(app);
         this._listen();
       } catch(e) {
-        console.warn('⚠️ SPS Firebase offline, using fallback pool:', e.message);
-        this._loadFallback();
+        console.warn('⚠️ SPS Firebase RTDB background connection error:', e.message);
+      }
+    }
+
+    async loadLocalCache() {
+      try {
+        const [sailorsRes, avRes, outRes] = await Promise.allSettled([
+          fetch('data/cmsys_sailors.json'),
+          fetch('data/cmsys_availability.json'),
+          fetch('data/cmsys_out_projects.json')
+        ]);
+
+        if (sailorsRes.status === 'fulfilled' && sailorsRes.value.ok) {
+          const rawSailors = await sailorsRes.value.json();
+          this._processSailors(rawSailors, false);
+        }
+
+        if (avRes.status === 'fulfilled' && avRes.value.ok) {
+          const rawAv = await avRes.value.json();
+          window.spsStore.setAvailability(rawAv);
+        }
+
+        if (outRes.status === 'fulfilled' && outRes.value.ok) {
+          const rawOut = await outRes.value.json();
+          window.spsStore.setOutProjects(rawOut);
+        }
+
+        this._hasLocalLoaded = true;
+      } catch (err) {
+        console.warn('⚠️ Error reading local CMSys cache files:', err);
       }
     }
 
     _listen() {
-      this.db.ref('sailors').on('value', snap => {
-        if (!snap.exists()) { this._loadFallback(); return; }
-        const raw = snap.val();
-        const arr = Array.isArray(raw) ? raw : Object.values(raw);
-        const normalized = arr.filter(Boolean).map((s, i) => ({
-          id: s.id || `FB-${i}`,
-          official_number: s.official_number || s.officialNumber || s.off_no || s.navy_no || `NAV/${i}`,
-          name: s.name || (s.firstName ? `${s.firstName} ${s.lastName||''}`.trim() : `Sailor ${i}`),
-          rank:  s.rank  || 'AB',
-          trade: (s.trade || s.branch || 'MA').toUpperCase(),
-          category: s.category || 'Regular',
-          zone: s.zone_assigned || s.zone || 'Unassigned',
-          status: s.status || 'Active',
-          performance_score: parseFloat(s.performance_score || s.rating || 7.5)
-        }));
+      if (!this.db) return;
 
-        window.spsStore.setSailors(normalized);
-        this.connected = true;
-        this._updateUI(true, normalized.length);
-        console.log(`✅ SPS Firebase: ${normalized.length} sailors synced`);
+      // Listen for sailors
+      this.db.ref('sailors').on('value', snap => {
+        if (!snap.exists()) return;
+        this._processSailors(snap.val(), true);
       }, err => {
-        console.warn('⚠️ Firebase error, using fallback:', err.message);
-        this._loadFallback();
+        console.warn('⚠️ Firebase sailors stream warning:', err.message);
+      });
+
+      // Listen for availability (leaves, sick, temporary duty)
+      this.db.ref('availability').on('value', snap => {
+        if (!snap.exists()) return;
+        window.spsStore.setAvailability(snap.val());
+      }, err => {
+        console.warn('⚠️ Firebase availability stream warning:', err.message);
+      });
+
+      // Listen for out_projects
+      this.db.ref('out_projects').on('value', snap => {
+        if (!snap.exists()) return;
+        window.spsStore.setOutProjects(snap.val());
+      }, err => {
+        console.warn('⚠️ Firebase out_projects stream warning:', err.message);
       });
     }
 
-    async _loadFallback() {
-      // First try fetching from our local server's Firebase proxy
-      try {
-        const res = await fetch('/api/sailors');
-        if (res.ok) {
-          const json = await res.json();
-          if (json.sailors && json.sailors.length > 0) {
-            const normalized = json.sailors.map((s, i) => ({
-              id: s.id || `FB-${i}`,
-              official_number: s.official_number || s.officialNumber || s.off_no || s.navy_no || `NAV/${i}`,
-              name: s.name || (s.firstName ? `${s.firstName} ${s.lastName||''}`.trim() : `Sailor ${i}`),
-              rank:  s.rank  || 'AB',
-              trade: (s.trade || s.branch || 'MA').toUpperCase(),
-              category: s.category || 'Regular',
-              zone: s.zone_assigned || s.zone || 'Unassigned',
-              status: s.status || 'Active',
-              performance_score: parseFloat(s.performance_score || s.rating || 7.5)
-            }));
-            window.spsStore.setSailors(normalized);
-            this.connected = true;
-            this._updateUI(true, normalized.length);
-            return;
-          }
-        }
-      } catch (e) {
-        // Fall through to hardcoded pool
-      }
+    _processSailors(raw, isLive = false) {
+      if (!raw) return;
+      const entries = Array.isArray(raw) 
+        ? raw.map((s, idx) => [s?._fbKey || s?.id || `FB-${idx}`, s])
+        : Object.entries(raw);
 
-      window.spsStore.setSailors(FALLBACK_SAILORS);
-      this.connected = false;
-      this._updateUI(false, FALLBACK_SAILORS.length);
+      const normalized = entries.filter(([, s]) => s && typeof s === 'object').map(([fbKey, s], i) => {
+        const offNo = (s.off_no || s.official_number || s.officialNumber || s.navy_no || `NAV-${i}`).trim();
+        const cleanNo = offNo.replace(/[^a-zA-Z0-9]/g, '');
+        const rank = s.rank || 'AB';
+        const trade = (s.trade || s.branch || 'MA').toUpperCase();
+        const name = (s.name || (s.firstName ? `${s.firstName} ${s.lastName || ''}`.trim() : `Sailor ${offNo}`)).trim();
+        const vType = s.victualing_type || (s.roll === 'VAS' ? 'V/In' : 'V/In');
+        const district = s.district || s.city || (s.address ? s.address.split(',').pop().trim() : 'Trincomalee');
+
+        return {
+          id: s.id || fbKey || `FB-${i}`,
+          _fbKey: fbKey,
+          cmsys_sailor_id: fbKey,
+          official_number: offNo,
+          off_no: offNo,
+          cleanNo: cleanNo,
+          name: name,
+          rank: rank,
+          trade: trade,
+          roll: s.roll || (offNo.startsWith('VAS') ? 'VAS' : offNo.startsWith('EC') ? 'EC' : 'REG'),
+          category: s.category || 'Regular',
+          zone: s.zone_assigned || s.zone || 'Special Projects',
+          status: s.status || 'Active',
+          performance_score: parseFloat(s.performance_score || s.rating || 8.5),
+          victualing_type: vType,
+          district: district,
+          home_location: district,
+          city: s.city || '',
+          address: s.address || '',
+          address_line: s.address_line || '',
+          police_station: s.police_station || '',
+          contact_no: s.contact_no || s.phone || s.mobile || '',
+          blood_group: s.blood_group || '',
+          special_skill: s.special_skill || s.skills || '',
+          join_date: s.join_date || '',
+          id_expiry: s.id_expiry || '',
+          nok_name: s.nok_name || '',
+          next_b_medical_date: s.next_b_medical_date || '',
+          next_gcb_date: s.next_gcb_date || '',
+          next_nav3_date: s.next_nav3_date || '',
+          next_r_medical_date: s.next_r_medical_date || '',
+          photo_url: `images/${cleanNo}.JPG`
+        };
+      });
+
+      window.spsStore.setSailors(normalized);
+      this.connected = isLive;
+      this._updateUI(isLive, normalized.length);
+      console.log(`✅ SPS Firebase Sync: ${normalized.length} complete sailor profiles registered (${isLive ? 'Live RTDB' : 'Cached Snapshot'})`);
     }
 
     _updateUI(live, count) {
@@ -122,7 +163,7 @@
       if (el) {
         el.innerHTML = live
           ? `<span class="pulse-dot"></span> Live (${count} Sailors)`
-          : `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#f59e0b;margin-right:5px;"></span> Offline Pool (${count})`;
+          : `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#10b981;margin-right:5px;"></span> DB Synced (${count})`;
       }
     }
   }

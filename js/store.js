@@ -7,7 +7,7 @@
 (function() {
   'use strict';
 
-  const STORAGE_KEY = 'sps_v4_state';
+  const STORAGE_KEY = 'cmsys_project_v6_state';
 
   const NAVAL_ROLES = [
     { id: 'admin',     name: 'Admin',                 code: 'ADMIN',     level: 1, desc: 'Full System Administrator — All Privileges' },
@@ -17,6 +17,21 @@
     { id: 'ce_ww',     name: 'CE (W/W)',              code: 'CE(W/W)',   level: 3, desc: 'Civil Engineer' },
     { id: 'artificers',name: 'Artificers',           code: 'ARTIFICER', level: 4, desc: 'Chief / Senior Artificers & Technical Supervision' },
     { id: 'incharge',  name: 'Incharge',              code: 'INCHARGE',  level: 5, desc: 'Site In-Charge Officer & Petty Officers' }
+  ];
+
+  const CMSYS_OFFICERS_DEFAULT = [
+    { id: 'OFF-001', username: 'kmau.kahandawa', alt_usernames: ['KMAU Kahandawa', 'kmau', 'admin'], name: 'Lt Cdr KMAU Kahandawa', rank: 'Lt Commander', serviceNo: 'NRC 3542', appointment: 'SCE (W/W) & System Administrator', department: 'CSLOG / CE', category: 'Officer', role: 'admin', seniority: 1, email: 'kmau.kahandawa@navy.lk', phone: '071-8849201', officeNo: '026-2224501', status: 'Active', assignedProjects: ['ALL', 'NSH', 'EFS', 'ANDAMKULAM', 'SOBA ISLAND'] },
+    { id: 'OFF-002', username: 'bgl.balasuriya', alt_usernames: ['BGL Balasuriya', 'balasuriya'], name: 'Capt (S) BGL Balasuriya', rank: 'Captain (S)', serviceNo: 'NRC 1843', appointment: 'CCED (East)', department: 'Civil Engineering', category: 'Officer', role: 'cced_e', seniority: 2, email: 'cced.east@navy.lk', phone: '071-2244101', officeNo: '026-2224500', status: 'Active', assignedProjects: ['ALL', 'LMS', 'NSH', 'NELUGALA TEMPLE', 'KUTTIYARAMA'] },
+    { id: 'OFF-003', username: 'r.perera', alt_usernames: ['Cdr R. Perera', 'rperera'], name: 'Cdr R. Perera', rank: 'Commander', serviceNo: 'SVC/1234', appointment: 'CSLOG', department: 'CSLOG', category: 'Officer', role: 'cceo_e', seniority: 3, email: 'cslog.east@navy.lk', phone: '071-3345102', officeNo: '026-2224510', status: 'Active', assignedProjects: ['NSH', 'Vote 2104 Projects'] },
+    { id: 'OFF-004', username: 'a.wickrama', alt_usernames: ['Lt Cdr A. Wickrama', 'awickrama'], name: 'Lt Cdr A. Wickrama', rank: 'Lt Commander', serviceNo: 'SVC/2222', appointment: 'CCEO (East)', department: 'Civil Engineering', category: 'Officer', role: 'cceo_e', seniority: 4, email: 'cceo.east@navy.lk', phone: '071-4456103', officeNo: '026-2224512', status: 'Active', assignedProjects: ['Vote 2001', 'Vote 2506', 'ANDAMKULAM'] },
+    { id: 'OFF-005', username: 'k.silva', alt_usernames: ['Lt Cdr K. Silva', 'ksilva'], name: 'Lt Cdr K. Silva', rank: 'Lt Commander', serviceNo: 'SVC/3456', appointment: 'ASO (East)', department: 'CSLOG', category: 'Officer', role: 'cceo_e', seniority: 5, email: 'aso.east@navy.lk', phone: '071-5567104', officeNo: '026-2224515', status: 'Active', assignedProjects: ['Store Yard', 'General Stores', 'Procurement Pipeline'] },
+    { id: 'OFF-006', username: 'm.fernando', alt_usernames: ['Lt M. Fernando', 'mfernando'], name: 'Lt M. Fernando', rank: 'Lieutenant', serviceNo: 'SVC/2345', appointment: 'CLOGD', department: 'CSLOG', category: 'Officer', role: 'ce_ww', seniority: 6, email: 'clogd.dockyard@navy.lk', phone: '071-6678105', officeNo: '026-2224520', status: 'Active', assignedProjects: ['EFS', 'SSSO Main Gate'] },
+    { id: 'OFF-007', username: 'd.rajapaksa', alt_usernames: ['Lt D. Rajapaksa', 'drajapaksa'], name: 'Lt D. Rajapaksa', rank: 'Lieutenant', serviceNo: 'SVC/3333', appointment: 'SCE (Marine)', department: 'Civil Engineering', category: 'Officer', role: 'sce_ww', seniority: 7, email: 'sce.marine@navy.lk', phone: '071-7789106', officeNo: '026-2224522', status: 'Active', assignedProjects: ['SGP', 'Guide Pier', 'Floating Dock'] },
+    { id: 'OFF-008', username: 'n.gunawardena', alt_usernames: ['Lt N. Gunawardena', 'ngunawardena'], name: 'Lt N. Gunawardena', rank: 'Lieutenant', serviceNo: 'SVC/4444', appointment: 'SCE (Planning & Progress)', department: 'Civil Engineering', category: 'Officer', role: 'sce_ww', seniority: 8, email: 'sce.pp@navy.lk', phone: '071-8890107', officeNo: '026-2224525', status: 'Active', assignedProjects: ['WBS Planning', 'Vote Monitoring', 'Gantt Tracking'] },
+    { id: 'OFF-009', username: 's.bandara', alt_usernames: ['Lt Cdr S. Bandara', 'sbandara'], name: 'Lt Cdr S. Bandara', rank: 'Lt Commander', serviceNo: 'NRX 1042', appointment: 'APO (East)', department: 'CSLOG', category: 'Officer', role: 'cceo_e', seniority: 9, email: 'apo.east@navy.lk', phone: '071-9901108', officeNo: '026-2224530', status: 'Active', assignedProjects: ['Procurement Files', 'Tenders', 'Vote 2103'] },
+    { id: 'OFF-010', username: 't.jayasuriya', alt_usernames: ['Capt T. Jayasuriya', 'tjayasuriya'], name: 'Capt T. Jayasuriya', rank: 'Captain', serviceNo: 'NRC 1120', appointment: 'Project Director LMS', department: 'CE / Naval Academy', category: 'Officer', role: 'cced_e', seniority: 10, email: 'lms.project@navy.lk', phone: '071-1122334', officeNo: '026-2224535', status: 'Active', assignedProjects: ['LMS (Vote 2104)'] },
+    { id: 'OFF-011', username: 'cbl.chandradasa', alt_usernames: ['Lt Cdr CBL Chandradasa', 'chandradasa'], name: 'Lt Cdr CBL Chandradasa', rank: 'Lt Commander', serviceNo: 'NRX 2890', appointment: 'Housing Project Director', department: 'Civil Engineering', category: 'Officer', role: 'ce_ww', seniority: 11, email: 'chandradasa.cbl@navy.lk', phone: '071-2233445', officeNo: '026-2224540', status: 'Active', assignedProjects: ['SP-HOU-005', 'Naval Welfare Housing'] },
+    { id: 'OFF-012', username: 'dulanjana', alt_usernames: ['Lt Cdr Dulanjana', 'dulanjana.nrx'], name: 'Lt Cdr Dulanjana', rank: 'Lt Commander', serviceNo: 'NRX 3467', appointment: 'Welfare Housing Officer', department: 'Civil Engineering', category: 'Officer', role: 'ce_ww', seniority: 12, email: 'dulanjana.nrx3467@navy.lk', phone: '071-3344556', officeNo: '026-2224542', status: 'Active', assignedProjects: ['SP-HOU-006', 'Welfare Housing'] }
   ];
 
   class SPSStore {
@@ -29,17 +44,11 @@
         jobCards: [],
         documents: [],
         sailors: [],
+        availability: {},
+        outProjects: {},
         weatherLogs: [],
-        users: [
-          { id: 'U001', name: 'Capt S. Bandara', serviceNo: 'N/00101', role: 'admin',      designation: 'Chief Engineer Admin' },
-          { id: 'U002', name: 'Cdr R. Jayawardena', serviceNo: 'N/00245', role: 'cced_e',   designation: 'CCED (East)' },
-          { id: 'U003', name: 'Lt Cdr K. Perera', serviceNo: 'N/00488', role: 'cceo_e',   designation: 'CCEO (East)' },
-          { id: 'U004', name: 'Lt T. Fernando',   serviceNo: 'N/00612', role: 'sce_ww',   designation: 'SCE (W/W)' },
-          { id: 'U005', name: 'Lt M. Ratnayake', serviceNo: 'N/00755', role: 'ce_ww',    designation: 'CE (W/W)' },
-          { id: 'U006', name: 'CPO W. Silva',     serviceNo: 'V/10482', role: 'artificers',designation: 'Chief Artificer' },
-          { id: 'U007', name: 'PO1 R. Jayasena',  serviceNo: 'MA/5678', role: 'incharge',  designation: 'Site Incharge (Trincomalee)' }
-        ],
-        activeUserId: 'U001',
+        users: JSON.parse(JSON.stringify(CMSYS_OFFICERS_DEFAULT)),
+        activeUserId: 'OFF-001',
         ganttZoom: 'Weeks',
         ganttStartYear: 2026,
         activeCategory: 'All',
@@ -60,19 +69,108 @@
     get procurementFiles() { return this._state.procurementFiles || []; }
     get attachments()      { return this._state.attachments; }
     get jobCards()         { return this._state.jobCards; }
-    get documents()        { return this._state.documents; }
-    get sailors()          { return this._state.sailors; }
-    get weatherLogs()      { return this._state.weatherLogs || []; }
+    get sailors() {
+      const map = new Map();
+      const rawSailors = Array.isArray(this._state.sailors)
+        ? this._state.sailors
+        : (this._state.sailors && typeof this._state.sailors === 'object' ? Object.values(this._state.sailors) : []);
+      rawSailors.forEach(s => {
+        if (s && (s.official_number || s.off_no)) {
+          const rawOff = s.official_number || s.off_no || '';
+          const normKey = rawOff.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+          const cleanNo = rawOff.replace(/[^a-zA-Z0-9]/g, '');
+          const normalized = {
+            ...s,
+            official_number: rawOff,
+            off_no: rawOff,
+            cleanNo: cleanNo,
+            name: s.name || rawOff,
+            rank: s.rank || 'AB',
+            trade: (s.trade || 'MA').toUpperCase(),
+            district: s.district || s.home_location || s.city || 'Trincomalee',
+            home_location: s.district || s.home_location || s.city || 'Trincomalee',
+            victualing_type: s.victualing_type || 'V/In',
+            performance_score: parseFloat(s.performance_score || s.rating || 8.5),
+            photo_url: s.photo_url || `images/${cleanNo}.JPG`
+          };
+          map.set(normKey, normalized);
+        }
+      });
+      (this._state.attachments || []).forEach(a => {
+        if (a && a.official_number) {
+          const normKey = a.official_number.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+          if (!map.has(normKey)) {
+            const cleanNo = a.official_number.replace(/[^a-zA-Z0-9]/g, '');
+            map.set(normKey, {
+              id: a.cmsys_sailor_id || a.official_number,
+              _fbKey: a.cmsys_sailor_id || normKey,
+              cmsys_sailor_id: a.cmsys_sailor_id || normKey,
+              official_number: a.official_number,
+              off_no: a.official_number,
+              cleanNo: cleanNo,
+              name: a.name || a.official_number,
+              rank: a.rank || 'AB',
+              trade: (a.trade || 'MA').toUpperCase(),
+              roll: a.official_number.startsWith('VAS') ? 'VAS' : (a.official_number.startsWith('EC') ? 'EC' : 'REG'),
+              category: a.category || 'Regular',
+              zone: 'Special Projects',
+              status: a.status || 'Active',
+              performance_score: 8.5,
+              victualing_type: 'V/In',
+              district: 'Trincomalee',
+              home_location: 'Trincomalee',
+              photo_url: `images/${cleanNo}.JPG`
+            });
+          }
+        }
+      });
+      return Array.from(map.values());
+    }
+    get availability()     { return this._state.availability || {}; }
+    get outProjects()      { return this._state.outProjects || {}; }
+
+    getSailor(query) {
+      if (!query) return null;
+      const clean = String(query).replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+      const list = this.sailors;
+      return list.find(s => {
+        const sOff = (s.official_number || s.off_no || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+        if (sOff === clean) return true;
+        if (s._fbKey && s._fbKey === query) return true;
+        if (s.id && String(s.id) === String(query)) return true;
+        if (s.cmsys_sailor_id && String(s.cmsys_sailor_id) === String(query)) return true;
+        if (s.name && s.name.toUpperCase() === String(query).toUpperCase()) return true;
+        return false;
+      }) || null;
+    }
+
+    getSailorPhoto(sailorOrOffNo) {
+      const s = typeof sailorOrOffNo === 'object' ? sailorOrOffNo : this.getSailor(sailorOrOffNo);
+      const off = s ? (s.official_number || s.off_no || '') : String(sailorOrOffNo || '');
+      const cleanNo = off.replace(/[^a-zA-Z0-9]/g, '');
+      return {
+        url: `images/${cleanNo}.JPG`,
+        cleanNo: cleanNo,
+        fallbackRank: s ? s.rank : 'AB',
+        fallbackTrade: s ? s.trade : 'MA'
+      };
+    }
     get users()            { return this._state.users; }
+    get officers()         { return this._state.users.filter(u => u.category === 'Officer'); }
     get activeUserId()     { return this._state.activeUserId; }
     get ganttZoom()        { return this._state.ganttZoom; }
     get ganttStartYear()   { return this._state.ganttStartYear || 2026; }
     get activeCategory()   { return this._state.activeCategory; }
     get activeNavalVote()  { return this._state.activeNavalVote || 'All'; }
     get navalRoles()       { return NAVAL_ROLES; }
+    get state()            { return this._state; }
 
     get currentUser() {
       return this._state.users.find(u => u.id === this._state.activeUserId) || this._state.users[0];
+    }
+
+    get activeOfficer() {
+      return this.currentUser;
     }
 
     get activeRole() {
@@ -90,8 +188,20 @@
       this._emit('USER_CHANGED', this.currentUser);
     }
 
+    setOfficers(list) {
+      if (Array.isArray(list) && list.length > 0) {
+        this._state.users = list;
+        if (!this._state.users.some(u => u.id === this._state.activeUserId)) {
+          this._state.activeUserId = this._state.users[0].id;
+        }
+        this._save();
+        this._emit('OFFICERS_SET', list);
+      }
+    }
+
     addUserProfile(user) {
-      user.id = user.id || `U-${Date.now().toString().slice(-4)}`;
+      user.id = user.id || `OFF-${Date.now().toString().slice(-4)}`;
+      user.category = 'Officer';
       this._state.users.push(user);
       this._save();
       this._emit('USER_ADDED', user);
@@ -147,23 +257,304 @@
       return result;
     }
 
-    // ── Sailor Attachment History with Locations ──
+    // ── Sailor Attachment History with Locations, Out Projects & Victualing ──
     getSailorAttachmentHistory(officialNumber) {
-      const atts = this._state.attachments.filter(a => a.official_number === officialNumber);
-      return atts.map(a => {
+      const s = this.getSailor(officialNumber);
+      const cleanNo = (officialNumber || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+      const sFbKey = s ? (s._fbKey || s.cmsys_sailor_id || '') : '';
+
+      const atts = this._state.attachments.filter(a => {
+        const aClean = (a.official_number || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+        return aClean === cleanNo || (sFbKey && a.cmsys_sailor_id === sFbKey);
+      });
+
+      const list = atts.map(a => {
         const p = this.getProject(a.project_id);
+        const cat = p ? p.category : (a.category || 'General');
+        const isOut = (p && (cat === 'Religious' || cat === 'Housing' || p.is_out_project)) || 
+                      (s && s.victualing_type === 'V/Out') || 
+                      a.victualing === 'V/Out' || a.victualing_status === 'V/Out';
         return {
           id: a.id,
           project_id: a.project_id,
           project_title: p ? p.title : a.project_id,
           location: p ? p.location : 'Site',
-          category: p ? p.category : 'General',
-          from_date: a.from_date,
-          to_date: a.to_date,
+          category: cat,
+          from_date: a.from_date || a.start_date,
+          to_date: a.to_date || a.end_date,
           days_attached: a.days_attached || 1,
-          status: a.status
+          status: a.status || 'Active',
+          isOutProject: Boolean(isOut),
+          victualing: isOut ? 'V/Out' : 'V/In',
+          duty_role: a.duty_role || 'Tradesman'
         };
-      }).sort((a,b) => new Date(b.from_date) - new Date(a.from_date));
+      });
+
+      // Also incorporate assignments from CMSys out_projects
+      if (sFbKey && this._state.outProjects) {
+        Object.entries(this._state.outProjects).forEach(([opId, op]) => {
+          if (op && op.assigned_sailors && op.assigned_sailors[sFbKey]) {
+            const assign = op.assigned_sailors[sFbKey];
+            const assignDate = assign.assigned_date || '2026-08-01';
+            if (!list.some(item => item.project_title === op.name)) {
+              list.push({
+                id: `OP-${opId}`,
+                project_id: opId,
+                project_title: op.name,
+                location: op.location || 'External Site',
+                category: op.zone || 'Out Project',
+                from_date: assignDate,
+                to_date: '2026-11-30',
+                days_attached: 30,
+                status: op.status || 'Active',
+                isOutProject: true,
+                victualing: 'V/Out',
+                duty_role: 'Site Tradesman'
+              });
+            }
+          }
+        });
+      }
+
+      return list.sort((a,b) => new Date(b.from_date) - new Date(a.from_date));
+    }
+
+    // ── Period Metrics for Calendar & Master Personnel Register Table ──
+    getSailorPeriodMetrics(officialNumber, startDate, endDate) {
+      const s = this.getSailor(officialNumber);
+      if (!s) {
+        return {
+          officialNumber, name: officialNumber, rank: 'AB', trade: 'MA',
+          homeLocation: 'Trincomalee', district: 'Trincomalee', performanceScore: 7.5,
+          victualingType: 'V/In', isVictualingOut: false,
+          deployedDaysVicIn: 0, deployedDaysVicOut: 0, totalDeployedDays: 0,
+          sickDays: 0, sickIncidents: [], leaveDays: 0, leavePeriods: 'None',
+          otherDays: 0, calendarDayMap: {}, history: []
+        };
+      }
+
+      const sFbKey = s._fbKey || s.cmsys_sailor_id || '';
+      const history = this.getSailorAttachmentHistory(s.official_number);
+
+      const pStart = new Date(startDate); pStart.setHours(0,0,0,0);
+      const pEnd   = new Date(endDate);   pEnd.setHours(0,0,0,0);
+
+      let deployedDaysVicIn = 0;
+      let deployedDaysVicOut = 0;
+      let sickDays = 0;
+      let leaveDays = 0;
+      let otherDays = 0;
+      const leaveDates = [];
+      const sickIncidents = [];
+      const calendarDayMap = {};
+
+      const cur = new Date(pStart);
+      while (cur <= pEnd) {
+        const curStr = cur.toISOString().split('T')[0];
+        const ym = curStr.slice(0, 7);
+        const dayNum = cur.getDate();
+
+        let dayType = null;
+        let dayStatus = null;
+        let dayDetails = null;
+        let isOutProj = false;
+        let victualing = 'V/In';
+
+        // 1. Check availability status from CMSys RTDB
+        const avStatus = this._state.availability?.[ym]?.[dayNum]?.[sFbKey];
+        if (avStatus) {
+          const st = String(avStatus).toUpperCase().trim();
+          if (st === 'L' || st === 'SL') {
+            dayType = 'leave';
+            dayStatus = st;
+            leaveDays++;
+            leaveDates.push(curStr);
+          } else if (st === 'SICK' || st === 'ADM' || st === 'SIQ' || st === 'S/R' || st === 'M/D') {
+            dayType = 'sick';
+            dayStatus = st;
+            sickDays++;
+            sickIncidents.push({ date: curStr, category: st });
+          } else if (st === 'T/D') {
+            dayType = 'duty';
+            dayStatus = 'T/D';
+          } else if (st === 'R/D') {
+            dayType = 'other';
+            dayStatus = 'R/D';
+            otherDays++;
+          }
+        }
+
+        // 2. Check Project Attachments & Out Projects
+        const matchingAtt = history.find(h => {
+          const f = new Date(h.from_date); f.setHours(0,0,0,0);
+          const t = new Date(h.to_date);   t.setHours(0,0,0,0);
+          return cur >= f && cur <= t;
+        });
+
+        if (matchingAtt) {
+          isOutProj = matchingAtt.isOutProject;
+          victualing = matchingAtt.victualing;
+          if (dayType !== 'leave' && dayType !== 'sick') {
+            if (isOutProj || victualing === 'V/Out') {
+              dayType = 'vout';
+              deployedDaysVicOut++;
+            } else {
+              dayType = 'vin';
+              deployedDaysVicIn++;
+            }
+          }
+          dayDetails = matchingAtt;
+        } else if (dayType === 'duty') {
+          if (s.victualing_type === 'V/Out') {
+            dayType = 'vout';
+            deployedDaysVicOut++;
+            victualing = 'V/Out';
+            isOutProj = true;
+          } else {
+            dayType = 'vin';
+            deployedDaysVicIn++;
+          }
+        }
+
+        calendarDayMap[curStr] = {
+          date: curStr,
+          day: dayNum,
+          type: dayType,
+          status: dayStatus,
+          isOutProject: isOutProj,
+          victualing: victualing,
+          details: dayDetails
+        };
+
+        cur.setDate(cur.getDate() + 1);
+      }
+
+      const leavePeriods = this._formatDateRanges(leaveDates);
+      const totalDeployedDays = deployedDaysVicIn + deployedDaysVicOut;
+      const isCurrentlyVOut = (s.victualing_type === 'V/Out') || history.some(h => {
+        const today = new Date(); today.setHours(0,0,0,0);
+        return new Date(h.to_date) >= today && h.victualing === 'V/Out';
+      });
+
+      return {
+        officialNumber: s.official_number,
+        name: s.name,
+        rank: s.rank,
+        trade: s.trade,
+        roll: s.roll,
+        homeLocation: s.district || s.city || 'Trincomalee',
+        district: s.district || s.city || 'Trincomalee',
+        performanceScore: s.performance_score || 8.5,
+        victualingType: isCurrentlyVOut ? 'V/Out' : 'V/In',
+        isVictualingOut: isCurrentlyVOut,
+        deployedDaysVicIn,
+        deployedDaysVicOut,
+        totalDeployedDays,
+        sickDays,
+        sickIncidents,
+        leaveDays,
+        leavePeriods,
+        otherDays,
+        calendarDayMap,
+        history,
+        sailor: s
+      };
+    }
+
+    _formatDateRanges(dates) {
+      if (!dates || dates.length === 0) return 'None';
+      const sorted = [...dates].sort();
+      const ranges = [];
+      let start = sorted[0], prev = sorted[0], count = 1;
+
+      for (let i = 1; i < sorted.length; i++) {
+        const dCurr = new Date(sorted[i]);
+        const dPrev = new Date(prev);
+        const diff = Math.round((dCurr - dPrev) / 86400000);
+        if (diff === 1) {
+          prev = sorted[i];
+          count++;
+        } else {
+          ranges.push(count > 1 ? `${start.slice(5)} → ${prev.slice(5)} (${count}d)` : `${start.slice(5)} (1d)`);
+          start = prev = sorted[i];
+          count = 1;
+        }
+      }
+      ranges.push(count > 1 ? `${start.slice(5)} → ${prev.slice(5)} (${count}d)` : `${start.slice(5)} (1d)`);
+      return ranges.join(', ');
+    }
+
+    // ── Master Personnel Register: Multi-Attribute Query & Sorter Engine ──
+    getAllSailorsPeriodSummary(startDate, endDate, filters = {}, sortField = 'total_deployed', sortOrder = 'desc') {
+      const list = this.sailors;
+      const { search = '', trade = 'ALL', victualing = 'ALL', status = 'ALL' } = filters;
+      const cleanSearch = (search || '').toLowerCase().trim();
+
+      let results = [];
+      list.forEach(s => {
+        if (trade !== 'ALL' && s.trade !== trade) return;
+
+        const metrics = this.getSailorPeriodMetrics(s.official_number, startDate, endDate);
+
+        // Victualing filter
+        if (victualing === 'V/Out' && !metrics.isVictualingOut && metrics.deployedDaysVicOut === 0) return;
+        if (victualing === 'V/In' && (metrics.isVictualingOut || metrics.deployedDaysVicOut > 0) && metrics.deployedDaysVicIn === 0) return;
+
+        // Status filter
+        if (status === 'attached' && metrics.totalDeployedDays === 0) return;
+        if (status === 'leave' && metrics.leaveDays === 0) return;
+        if (status === 'sick' && metrics.sickDays === 0) return;
+
+        // Search text
+        if (cleanSearch) {
+          const haystack = `${s.name} ${s.official_number} ${s.trade} ${s.rank} ${metrics.homeLocation}`.toLowerCase();
+          if (!haystack.includes(cleanSearch)) return;
+        }
+
+        results.push(metrics);
+      });
+
+      // Sorting
+      results.sort((a, b) => {
+        let valA, valB;
+        switch (sortField) {
+          case 'name':
+            valA = a.name; valB = b.name;
+            return sortOrder === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+          case 'official_number':
+            valA = a.officialNumber; valB = b.officialNumber;
+            return sortOrder === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+          case 'trade':
+            valA = a.trade; valB = b.trade;
+            return sortOrder === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+          case 'home_location':
+            valA = a.homeLocation; valB = b.homeLocation;
+            return sortOrder === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+          case 'vic_in':
+            valA = a.deployedDaysVicIn; valB = b.deployedDaysVicIn;
+            break;
+          case 'vic_out':
+            valA = a.deployedDaysVicOut; valB = b.deployedDaysVicOut;
+            break;
+          case 'total_deployed':
+            valA = a.totalDeployedDays; valB = b.totalDeployedDays;
+            break;
+          case 'sick_days':
+            valA = a.sickDays; valB = b.sickDays;
+            break;
+          case 'leave_days':
+            valA = a.leaveDays; valB = b.leaveDays;
+            break;
+          case 'performance':
+            valA = a.performanceScore; valB = b.performanceScore;
+            break;
+          default:
+            valA = a.totalDeployedDays; valB = b.totalDeployedDays;
+        }
+        return sortOrder === 'asc' ? (valA - valB) : (valB - valA);
+      });
+
+      return results;
     }
 
     // ── Equal Opportunity & Anti-Bribery Rotation Metrics ──
@@ -211,7 +602,7 @@
 
     // ── Sorted Sailors for Rotation Fairness ──
     getSortedSailors(sortBy = 'least_religious', tradeFilter = 'ALL') {
-      let pool = [...this._state.sailors];
+      let pool = [...this.sailors];
       if (tradeFilter && tradeFilter !== 'ALL') {
         pool = pool.filter(s => s.trade === tradeFilter);
       }
@@ -456,6 +847,7 @@
     }
 
     getActiveProjects() { return this._state.projects.filter(p => p.status !== 'Completed'); }
+    getActiveProject()  { return this.getActiveProjects()[0] || this._state.projects[0]; }
     getCompletedProjects() { return this._state.projects.filter(p => p.status === 'Completed'); }
 
     // ── Weather Logs ──
@@ -580,7 +972,23 @@
     addDocument(doc) { doc.id = doc.id || `DOC-${Date.now()}`; this._state.documents.push(doc); this._save(); this._emit('DOC_ADDED', doc); }
     getDocumentsByProject(pid) { return this._state.documents.filter(d => d.project_id === pid); }
 
-    setSailors(list) { this._state.sailors = list; this._emit('SAILORS_SET', list); }
+    setSailors(list) {
+      if (list && typeof list === 'object' && !Array.isArray(list)) {
+        this._state.sailors = Object.keys(list).map(k => {
+          const item = list[k];
+          if (item && typeof item === 'object') {
+            item._fbKey = item._fbKey || k;
+            item.cmsys_sailor_id = item.cmsys_sailor_id || k;
+          }
+          return item;
+        });
+      } else {
+        this._state.sailors = Array.isArray(list) ? list : [];
+      }
+      this._emit('SAILORS_SET', this._state.sailors);
+    }
+    setAvailability(av) { this._state.availability = av || {}; this._emit('AVAILABILITY_SET', this._state.availability); }
+    setOutProjects(op) { this._state.outProjects = op || {}; this._emit('OUT_PROJECTS_SET', this._state.outProjects); }
 
     setGanttZoom(z) { this._state.ganttZoom = z; this._save(); this._emit('ZOOM_CHANGED', z); }
     setGanttStartYear(yr) { this._state.ganttStartYear = yr; this._save(); this._emit('GANTT_YEAR_CHANGED', yr); }
@@ -590,11 +998,11 @@
       try {
         const { projects, navalProjects, procurementFiles, attachments, jobCards, documents, weatherLogs, users, activeUserId, ganttZoom, ganttStartYear, activeCategory, activeNavalVote } = this._state;
         const serialized = JSON.stringify({
-          projects, navalProjects, procurementFiles, attachments, jobCards, documents, weatherLogs, users, activeUserId, ganttZoom, ganttStartYear, activeCategory, activeNavalVote, v: 5
+          projects, navalProjects, procurementFiles, attachments, jobCards, documents, weatherLogs, users, activeUserId, ganttZoom, ganttStartYear, activeCategory, activeNavalVote, v: 6
         });
         localStorage.setItem(STORAGE_KEY, serialized);
-        localStorage.setItem('sps_master_state', serialized);
-      } catch(e) { console.warn('SPS Store save failed:', e); }
+        localStorage.setItem('cmsys_project_master_state', serialized);
+      } catch(e) { console.warn('CMSys Store save failed:', e); }
     }
 
     load() {
@@ -602,7 +1010,7 @@
         const raw = localStorage.getItem(STORAGE_KEY);
         if (raw) {
           const d = JSON.parse(raw);
-          if (d.v === 4 || d.v === 5) {
+          if (d.v === 6) {
             this._state.projects         = d.projects         || [];
             this._state.navalProjects    = d.navalProjects    || [];
             this._state.procurementFiles = d.procurementFiles || [];
@@ -610,8 +1018,13 @@
             this._state.jobCards         = d.jobCards         || [];
             this._state.documents        = d.documents        || [];
             this._state.weatherLogs      = d.weatherLogs      || [];
-            this._state.users            = d.users            || this._state.users;
-            this._state.activeUserId     = d.activeUserId     || 'U001';
+            // Ensure users only has official officers (filter out any old dummy U001 entries)
+            if (d.users && Array.isArray(d.users) && d.users.length > 0 && d.users[0].id.startsWith('OFF-')) {
+              this._state.users          = d.users;
+            } else {
+              this._state.users          = JSON.parse(JSON.stringify(CMSYS_OFFICERS_DEFAULT));
+            }
+            this._state.activeUserId     = (d.activeUserId && d.activeUserId.startsWith('OFF-')) ? d.activeUserId : 'OFF-001';
             this._state.ganttZoom        = d.ganttZoom        || 'Weeks';
             this._state.ganttStartYear   = d.ganttStartYear   || 2026;
             this._state.activeCategory   = d.activeCategory   || 'All';
@@ -620,7 +1033,7 @@
             return true;
           }
         }
-      } catch(e) { console.warn('SPS Store load failed:', e); }
+      } catch(e) { console.warn('CMSys Store load failed:', e); }
       return false;
     }
 

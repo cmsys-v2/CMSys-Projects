@@ -2,30 +2,61 @@
   "database": {
     "rules": "database.rules.json"
   },
-  "hosting": {
-    "public": ".",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**",
-      "scripts/**"
-    ],
-    "rewrites": [
-      {
-        "source": "**",
-        "destination": "/index.html"
-      }
-    ],
-    "headers": [
-      {
-        "source": "**/*.@(js|css)",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "max-age=3600"
-          }
-        ]
-      }
-    ]
-  }
+  "hosting": [
+    {
+      "target": "projects",
+      "public": ".",
+      "ignore": [
+        "firebase.json",
+        ".firebaserc",
+        "**/.*",
+        "**/.*/**",
+        "node_modules/**",
+        "**/node_modules/**",
+        "scripts/**",
+        "**/scripts/**",
+        "**/*.xlsx",
+        "**/*.pdf",
+        "**/*.md",
+        "api/**",
+        "validate-civil-pm.js"
+      ],
+      "cleanUrls": true,
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ],
+      "headers": [
+        {
+          "source": "**/*.@(jpg|jpeg|gif|png|webp|svg|ico|woff|woff2|ttf|eot)",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=2592000, stale-while-revalidate=86400"
+            }
+          ]
+        },
+        {
+          "source": "**/*.@(js|css|json)",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=604800, stale-while-revalidate=86400"
+            }
+          ]
+        },
+        {
+          "source": "**/*.@(html|htm)",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache, must-revalidate"
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }

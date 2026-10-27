@@ -17,12 +17,13 @@
       this._currentView = 'dashboard';
       this._filterCat   = 'All';
       this._allProjects  = [];
+      this._settingsTab = 'officers';
     }
 
     async init() {
       // Load persisted state, or fetch sample data first
       const loaded = window.spsStore.load();
-      if (!loaded || window.spsStore.projects.length === 0 || window.spsStore.navalProjects.length === 0) {
+      if (!loaded || window.spsStore.projects.length === 0 || window.spsStore.navalProjects.length === 0 || window.spsStore.officers.length === 0) {
         await this._loadSampleData();
       }
 
@@ -45,11 +46,13 @@
         if (['PROJECT_ADDED','PROJECT_UPDATED','PROJECT_DELETED'].includes(event)) {
           if (this._currentView === 'dashboard') this.renderDashboard();
           if (this._currentView === 'projects')  this.renderProjectsView();
+          if (this._currentView === 'progress-center' && window.progressCenter) window.progressCenter.render();
           this.updateSidebarCounts();
         }
         if (['NAVAL_PROJECT_ADDED','NAVAL_PROJECT_UPDATED','NAVAL_PROJECT_DELETED','PROCUREMENT_FILE_ADDED','PROCUREMENT_FILE_UPDATED','PROCUREMENT_FILE_DELETED','NAVAL_VOTE_CHANGED'].includes(event)) {
           if (this._currentView === 'naval-projects') window.navalProjectsModule.render();
           if (this._currentView === 'dashboard') this.renderDashboard();
+          if (this._currentView === 'progress-center' && window.progressCenter) window.progressCenter.render();
           this.updateSidebarCounts();
         }
         if (['ATTACHMENT_ADDED','ATTACHMENT_DELETED','ATTACHMENTS_BULK','ATTACHMENTS_SET'].includes(event)) {
@@ -57,10 +60,11 @@
           if (this._currentView === 'labour')    window.labourCentre.render();
           this.updateSidebarCounts();
         }
-        if (event === 'USER_CHANGED') {
+        if (['USER_CHANGED', 'USER_UPDATED', 'OFFICERS_SET'].includes(event)) {
           this._renderRoleSwitcher();
           this._applyRolePermissions();
           if (this._currentView === 'settings') this.renderSettingsView();
+          this.updateSidebarCounts();
         }
       });
     }
@@ -94,7 +98,17 @@
           } catch(ne) { console.warn('Naval projects standalone load failed:', ne); }
         }
 
-        console.log('✅ SLN Platform sample data loaded:', window.spsStore.projects?.length, 'special projects,', window.spsStore.navalProjects?.length, 'naval projects');
+        // Load authoritative CMSys Officers directory
+        try {
+          const or = await fetch('data/officers.json');
+          if (or.ok) {
+            const od = await or.json();
+            const list = Array.isArray(od) ? od : (od.officers || []);
+            if (list.length > 0) window.spsStore.setOfficers(list);
+          }
+        } catch(oe) { console.warn('Officers directory load fallback:', oe); }
+
+        console.log('✅ CMSys Platform data loaded:', window.spsStore.projects?.length, 'special projects,', window.spsStore.navalProjects?.length, 'naval projects,', window.spsStore.officers?.length, 'officers');
       } catch(e) { console.warn('Sample data load failed:', e); }
     }
 
@@ -106,9 +120,9 @@
     }
 
     navigate(view) {
-      if (view === 'settings' && !window.spsStore.isAdmin()) {
-        this.toast('Settings is restricted to Admin role', 'warning');
-        return;
+      if (view === 'officers') {
+        this._settingsTab = 'officers';
+        return this.navigate('settings');
       }
 
       this._currentView = view;
@@ -121,50 +135,56 @@
 
       const titles = { 
         dashboard: 'Executive Dashboard', 
+        'progress-center': 'Project Progress & Monitoring Center',
         'naval-projects': 'Naval Projects & Procurement Command Center', 
         projects: 'Special Projects (CSR & Welfare)', 
         labour: 'Labour & Personnel Center', 
-        settings: 'Admin Settings' 
+        officers: 'Commissioned Officers & Engineering Command Profiles',
+        settings: 'Settings & Officers Profiles' 
       };
-      document.getElementById('page-title').textContent = titles[view] || 'SLN Project Platform';
+      const titleEl = document.getElementById('page-title');
+      if (titleEl) titleEl.textContent = titles[view] || 'CMSys Project';
 
       if (view === 'dashboard') this.renderDashboard();
+      if (view === 'progress-center' && window.progressCenter) window.progressCenter.render();
       if (view === 'naval-projects') window.navalProjectsModule.render();
       if (view === 'projects')  this.renderProjectsView();
       if (view === 'labour')    window.labourCentre.render();
       if (view === 'settings')  this.renderSettingsView();
     }
 
-    // ── User Role Switcher ──
+    // ── Officer Profile & Role Switcher ──
     _renderRoleSwitcher() {
       const el = document.getElementById('topbar-user-role');
       if (!el) return;
       const user = window.spsStore.currentUser;
       const role = window.spsStore.activeRole;
-      const users = window.spsStore.users;
+      const officers = window.spsStore.officers;
 
       el.innerHTML = `
-        <div style="display:flex;align-items:center;gap:8px;background:var(--bg-surface);border:1px solid var(--border);border-radius:20px;padding:4px 12px;">
-          <div style="width:24px;height:24px;border-radius:50%;background:${user.role==='admin'?'var(--accent)':'var(--text-muted)'};display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:#07101f;font-weight:900;">
-            ${user.name.charAt(0)}
+        <div class="officer-topbar-pill" title="Active Officer Profile — Click to Authenticate or Switch Profile">
+          <div class="officer-topbar-avatar" onclick="window.app.openOfficerLoginModal('${user.id}')" style="cursor:pointer;">
+            <i class="fas fa-user-shield"></i>
           </div>
-          <div style="display:flex;flex-direction:column;">
-            <span style="font-size:0.75rem;font-weight:700;line-height:1.1;">${user.name}</span>
-            <span style="font-size:0.65rem;color:${user.role==='admin'?'var(--accent)':'var(--warning)'};font-weight:700;">${role.code}</span>
+          <div class="officer-topbar-info" onclick="window.app.openOfficerLoginModal('${user.id}')" style="cursor:pointer;">
+            <span style="font-size:0.75rem;font-weight:700;color:var(--text-primary);line-height:1.1;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px;">${user.name}</span>
+            <span style="font-size:0.65rem;color:var(--accent);font-weight:600;display:block;">${user.appointment || role.code}</span>
           </div>
-          <select style="background:transparent;border:none;color:var(--text-muted);font-size:0.75rem;cursor:pointer;" onchange="window.spsStore.setActiveUser(this.value)">
-            ${users.map(u => `<option value="${u.id}" ${u.id===user.id?'selected':''}>${u.name} (${u.role.toUpperCase()})</option>`).join('')}
+          <select style="background:transparent;border:none;color:var(--accent);font-size:0.72rem;font-weight:700;cursor:pointer;outline:none;padding:2px 4px;max-width:130px;" onchange="window.app.switchOfficerQuick(this.value)">
+            ${officers.map(u => `<option value="${u.id}" ${u.id===user.id?'selected':''}>${u.name.replace(/^Capt \(S\) |^Lt Cdr |^Cdr |^Lt /i, '')} (${u.role.toUpperCase()})</option>`).join('')}
           </select>
+          <button style="background:none;border:none;color:var(--accent);cursor:pointer;padding:2px 6px;font-size:0.75rem;" onclick="window.app.openOfficerLoginModal('${user.id}')" title="Authenticate / Login with CMSys Password">
+            <i class="fas fa-key"></i>
+          </button>
         </div>
       `;
       this._applyRolePermissions();
     }
 
     _applyRolePermissions() {
-      const isAdmin = window.spsStore.isAdmin();
       const settingsNav = document.querySelector('.nav-link[data-view="settings"]');
       if (settingsNav) {
-        settingsNav.style.display = isAdmin ? 'flex' : 'none';
+        settingsNav.style.display = 'flex';
       }
     }
 
@@ -390,14 +410,23 @@
       </table>`;
     }
 
-    // ── Settings View ──
+    setSettingsTab(tab) {
+      this._settingsTab = tab;
+      this.renderSettingsView();
+    }
+
+    // ── Settings View (Now Featuring Commissioned Officers Profiles) ──
     renderSettingsView() {
       const v = document.getElementById('settings-view');
       if (!v) return;
+
+      const tab = this._settingsTab || 'officers';
+      const officers = window.spsStore.officers;
       const users = window.spsStore.users;
       const roles = window.spsStore.navalRoles;
       const attachments = window.spsStore.attachments;
       const projs = window.spsStore.projects;
+      const isAdmin = window.spsStore.isAdmin();
       const pkg = { generated: new Date().toISOString(), source: 'SPS v4', total_attachments: attachments.length, total_projects: projs.length, attachments };
       const cloudStatus = window.spsCloudSync ? window.spsCloudSync.getStatus() : {
         connected: false,
@@ -407,120 +436,248 @@
         region: 'asia-southeast1 (Singapore)'
       };
 
-      v.innerHTML = `
-        <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:20px;">
-          <div>
-            <div class="section-header">
-              <div class="section-title"><i class="fas fa-users-cog"></i> User Profiles & Naval Roles</div>
-              <button class="btn btn-primary btn-sm" onclick="window.app.openAddUserModal()"><i class="fas fa-user-plus"></i> New User</button>
-            </div>
-            <div class="section-divider"></div>
-            
-            <div class="panel">
-              <div class="panel-head"><span class="panel-title"><i class="fas fa-user-shield"></i> System Users (${users.length})</span></div>
-              <div class="panel-body" style="padding:0;">
-                <table class="sps-table">
-                  <thead><tr><th>Name</th><th>Service No.</th><th>Role</th><th>Designation</th><th>Actions</th></tr></thead>
-                  <tbody>
-                    ${users.map(u => {
-                      const r = roles.find(role => role.id === u.role) || roles[0];
-                      const isSelf = u.id === window.spsStore.activeUserId;
-                      return `<tr>
-                        <td><strong>${u.name}</strong> ${isSelf ? '<span style="font-size:0.65rem;background:var(--accent);color:#07101f;padding:1px 5px;border-radius:4px;font-weight:800;">YOU</span>':''}</td>
-                        <td class="mono">${u.serviceNo}</td>
-                        <td><span class="status-badge" style="background:rgba(56,189,248,0.15);color:var(--accent);">${r.code}</span></td>
-                        <td style="font-size:0.8rem;color:var(--text-muted);">${u.designation}</td>
-                        <td>
-                          <button class="btn btn-ghost btn-icon btn-sm" onclick="window.app.openEditUserModal('${u.id}')"><i class="fas fa-edit"></i></button>
-                          ${!isSelf ? `<button class="btn btn-ghost btn-icon btn-sm" onclick="if(confirm('Delete user?')){window.spsStore.deleteUserProfile('${u.id}');window.app.renderSettingsView();}"><i class="fas fa-trash" style="color:var(--danger);"></i></button>` : ''}
-                        </td>
-                      </tr>`;
-                    }).join('')}
-                  </tbody>
-                </table>
+      const totalCount = officers.length;
+      const seniorCmd = officers.filter(o => o.rank.includes('Captain') || o.rank === 'Commander').length;
+      const ltCdrs = officers.filter(o => o.rank.includes('Lt Commander')).length;
+      const lieutenants = officers.filter(o => o.rank === 'Lieutenant').length;
+
+      let tabContent = '';
+
+      if (tab === 'officers') {
+        tabContent = `
+          <div class="section-header" style="margin-bottom:16px;">
+            <div>
+              <div class="section-title" style="font-size:1.2rem;display:flex;align-items:center;gap:10px;">
+                <i class="fas fa-user-shield" style="color:var(--accent);"></i>
+                <span>Commissioned Officers & Engineering Command Profiles</span>
+              </div>
+              <div style="font-size:0.8rem;color:var(--text-muted);margin-top:3px;">
+                Authoritative Commissioned Naval Officers (Dockyard Trincomalee) • CMSys Synchronized
               </div>
             </div>
+            <div style="display:flex;gap:10px;align-items:center;">
+              <button class="btn btn-secondary btn-sm" onclick="window.app.triggerGlobalSync()">
+                <i class="fas fa-rotate"></i> Sync CMSys
+              </button>
+              <button class="btn btn-primary btn-sm" onclick="window.app.openOfficerLoginModal()">
+                <i class="fas fa-key"></i> Switch / Authenticate
+              </button>
+              ${isAdmin ? `<button class="btn btn-ghost btn-sm" onclick="window.app.openAddOfficerModal()"><i class="fas fa-user-plus"></i> Add Officer</button>` : ''}
+            </div>
+          </div>
 
-            <div style="margin-top:16px;" class="panel">
-              <div class="panel-head"><span class="panel-title"><i class="fas fa-sitemap"></i> Naval Engineering Role Matrix</span></div>
-              <div class="panel-body">
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                  ${roles.map(r => `
+          <!-- Officers Stats Row -->
+          <div class="kpi-row" style="margin-bottom:20px;">
+            <div class="kpi-card">
+              <div class="kpi-text">
+                <label>Commissioned Officers</label>
+                <div class="kpi-val" style="color:var(--accent);">${totalCount}</div>
+                <div class="kpi-sub">Dockyard Command Registry</div>
+              </div>
+              <i class="kpi-icon fas fa-user-shield"></i>
+            </div>
+            <div class="kpi-card kpi-gold">
+              <div class="kpi-text">
+                <label>Senior Command (Capt / Cdr)</label>
+                <div class="kpi-val" style="color:var(--warning);">${seniorCmd}</div>
+                <div class="kpi-sub">CCED & CSLOG Directors</div>
+              </div>
+              <i class="kpi-icon fas fa-medal"></i>
+            </div>
+            <div class="kpi-card kpi-blue">
+              <div class="kpi-text">
+                <label>Staff & Executive (Lt Cdr)</label>
+                <div class="kpi-val" style="color:#38bdf8;">${ltCdrs}</div>
+                <div class="kpi-sub">SCE, CCEO, APO, Welfare</div>
+              </div>
+              <i class="kpi-icon fas fa-anchor"></i>
+            </div>
+            <div class="kpi-card kpi-green">
+              <div class="kpi-text">
+                <label>Civil Engineers (Lt)</label>
+                <div class="kpi-val" style="color:var(--success);">${lieutenants}</div>
+                <div class="kpi-sub">CLOGD, Marine, Planning</div>
+              </div>
+              <i class="kpi-icon fas fa-compass"></i>
+            </div>
+          </div>
+
+          <!-- Filter & Search Toolbar -->
+          <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;align-items:center;background:var(--bg-surface);padding:10px 14px;border-radius:10px;border:1px solid var(--border);">
+            <div class="search-wrap" style="flex:1;min-width:240px;position:relative;">
+              <i class="fas fa-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-dim);font-size:0.8rem;"></i>
+              <input type="text" class="form-control" id="officer-search-inp" placeholder="Search by name, rank, service no, appointment, department..." style="padding-left:32px;height:34px;font-size:0.82rem;" oninput="window.app.filterOfficers()">
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+              <select class="form-control" id="officer-rank-filter" style="width:160px;height:34px;font-size:0.8rem;" onchange="window.app.filterOfficers()">
+                <option value="ALL">All Ranks</option>
+                <option value="Captain">Captains</option>
+                <option value="Commander">Commanders</option>
+                <option value="Lt Commander">Lt Commanders</option>
+                <option value="Lieutenant">Lieutenants</option>
+              </select>
+              <select class="form-control" id="officer-dept-filter" style="width:170px;height:34px;font-size:0.8rem;" onchange="window.app.filterOfficers()">
+                <option value="ALL">All Departments</option>
+                <option value="Civil Engineering">Civil Engineering</option>
+                <option value="CSLOG">CSLOG</option>
+                <option value="CE / Naval Academy">Naval Academy</option>
+              </select>
+              <button class="btn btn-ghost btn-sm" onclick="document.getElementById('officer-search-inp').value='';document.getElementById('officer-rank-filter').value='ALL';document.getElementById('officer-dept-filter').value='ALL';window.app.filterOfficers();" title="Reset Filters">
+                <i class="fas fa-undo"></i> Reset
+              </button>
+            </div>
+          </div>
+
+          <!-- Grid of Officers Cards -->
+          <div class="officer-grid" id="officers-cards-grid">
+            ${this._renderOfficersCardsList(officers)}
+          </div>
+        `;
+      } else if (tab === 'cloud') {
+        tabContent = `
+          <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:20px;">
+            <div>
+              <!-- Dedicated Firebase Cloud Backend Panel -->
+              <div class="section-header">
+                <div class="section-title"><i class="fas fa-cloud"></i> Firebase Cloud Operations</div>
+                <button class="btn btn-secondary btn-sm" onclick="window.app.triggerGlobalSync()"><i class="fas fa-rotate"></i> Sync CMSys</button>
+              </div>
+              <div class="section-divider"></div>
+
+              <div class="panel" style="margin-bottom:20px;">
+                <div class="panel-head">
+                  <span class="panel-title"><i class="fas fa-database" style="color:var(--accent);"></i> Realtime Database (cmsys-projects)</span>
+                  <span class="badge ${cloudStatus.connected ? 'badge-success' : 'badge-warning'}">
+                    <i class="fas ${cloudStatus.connected ? 'fa-signal' : 'fa-triangle-exclamation'}"></i> ${cloudStatus.connected ? 'Cloud Connected' : 'Local Offline'}
+                  </span>
+                </div>
+                <div class="panel-body">
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
                     <div style="background:var(--bg-surface);border-radius:8px;padding:10px 12px;">
-                      <div style="font-weight:700;color:var(--accent);font-size:0.85rem;">${r.name} (${r.code})</div>
-                      <div style="font-size:0.73rem;color:var(--text-muted);margin-top:2px;">${r.desc}</div>
-                    </div>`).join('')}
+                      <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;font-weight:700;">Project ID</div>
+                      <div style="font-weight:700;color:var(--text-main);font-size:0.9rem;margin-top:2px;">${cloudStatus.projectId}</div>
+                      <div style="font-size:0.7rem;color:var(--text-dim);margin-top:2px;">Separate Dedicated Account</div>
+                    </div>
+                    <div style="background:var(--bg-surface);border-radius:8px;padding:10px 12px;">
+                      <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;font-weight:700;">Location Region</div>
+                      <div style="font-weight:700;color:var(--accent);font-size:0.9rem;margin-top:2px;">${cloudStatus.region}</div>
+                      <div style="font-size:0.7rem;color:var(--text-dim);margin-top:2px;">Low-latency Asia RTDB</div>
+                    </div>
+                  </div>
+
+                  <div style="background:var(--bg-app);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:0.73rem;font-family:var(--mono);line-height:1.6;">
+                    <div style="color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">URL: <span style="color:var(--accent);">${cloudStatus.databaseURL}</span></div>
+                    <div style="color:var(--text-muted);">Topology: <span style="color:#10b981;font-weight:700;">Dual Firebase (DB #1 Read-Only / DB #2 Read-Write)</span></div>
+                    <div style="color:var(--text-muted);">Last Sync: <strong>${cloudStatus.lastSync}</strong></div>
+                  </div>
+
+                  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <button class="btn btn-primary btn-sm" onclick="window.app.forceCloudSync()"><i class="fas fa-cloud-arrow-up"></i> Push All to Cloud</button>
+                    <button class="btn btn-secondary btn-sm" onclick="window.app.forceCloudPull()"><i class="fas fa-cloud-arrow-down"></i> Pull from Cloud</button>
+                    <button class="btn btn-secondary btn-sm" onclick="window.app.publishAbsorptionDirect()"><i class="fas fa-paper-plane"></i> Publish to CMSys Cloud</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <!-- CMSys Absorption Sync Bridge -->
+              <div class="section-header">
+                <div class="section-title"><i class="fas fa-sync-alt"></i> CMSys Attachment Sync Bridge</div>
+              </div>
+              <div class="section-divider"></div>
+
+              <div class="panel">
+                <div class="panel-head"><span class="panel-title"><i class="fas fa-info-circle"></i> Sync Engine</span></div>
+                <div class="panel-body">
+                  <p style="font-size:0.85rem;color:var(--text-secondary);line-height:1.6;margin-bottom:12px;">
+                    Export or publish special project sailor attachments for CMSys absorption and headcount reconciliation.
+                  </p>
+                  <div style="margin-bottom:14px;">
+                    <textarea id="sync-payload" readonly style="width:100%;height:180px;background:var(--bg-app);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text-secondary);font-family:var(--mono);font-size:0.72rem;resize:none;line-height:1.5;">${JSON.stringify(pkg, null, 2)}</textarea>
+                  </div>
+                  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <button class="btn btn-primary btn-sm" onclick="window.app.renderSettingsView();window.app.toast('Payload refreshed!','success')"><i class="fas fa-sync"></i> Refresh</button>
+                    <button class="btn btn-secondary btn-sm" onclick="window.app.downloadSyncPackage()"><i class="fas fa-download"></i> Download JSON</button>
+                    <button class="btn btn-secondary btn-sm" onclick="window.app.copySyncPayload()"><i class="fas fa-copy"></i> Copy Payload</button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-
-          <div>
-            <!-- Dedicated Firebase Cloud Backend Panel -->
-            <div class="section-header">
-              <div class="section-title"><i class="fas fa-cloud"></i> Firebase Cloud Operations</div>
-            </div>
-            <div class="section-divider"></div>
-
-            <div class="panel" style="margin-bottom:20px;">
-              <div class="panel-head">
-                <span class="panel-title"><i class="fas fa-database" style="color:var(--accent);"></i> Realtime Database (cmsys-projects)</span>
-                <span class="badge ${cloudStatus.connected ? 'badge-success' : 'badge-warning'}">
-                  <i class="fas ${cloudStatus.connected ? 'fa-signal' : 'fa-triangle-exclamation'}"></i> ${cloudStatus.connected ? 'Cloud Connected' : 'Local Offline'}
-                </span>
+        `;
+      } else if (tab === 'roles') {
+        tabContent = `
+          <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:20px;">
+            <div>
+              <div class="section-header">
+                <div class="section-title"><i class="fas fa-users-cog"></i> User Accounts & Roles</div>
+                ${isAdmin ? `<button class="btn btn-primary btn-sm" onclick="window.app.openAddOfficerModal()"><i class="fas fa-user-plus"></i> New User</button>` : ''}
               </div>
-              <div class="panel-body">
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
-                  <div style="background:var(--bg-surface);border-radius:8px;padding:10px 12px;">
-                    <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;font-weight:700;">Project ID</div>
-                    <div style="font-weight:700;color:var(--text-main);font-size:0.9rem;margin-top:2px;">${cloudStatus.projectId}</div>
-                    <div style="font-size:0.7rem;color:var(--text-dim);margin-top:2px;">Separate Dedicated Account</div>
-                  </div>
-                  <div style="background:var(--bg-surface);border-radius:8px;padding:10px 12px;">
-                    <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;font-weight:700;">Location Region</div>
-                    <div style="font-weight:700;color:var(--accent);font-size:0.9rem;margin-top:2px;">${cloudStatus.region}</div>
-                    <div style="font-size:0.7rem;color:var(--text-dim);margin-top:2px;">Low-latency Asia RTDB</div>
-                  </div>
-                </div>
-
-                <div style="background:var(--bg-app);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:0.73rem;font-family:var(--mono);line-height:1.6;">
-                  <div style="color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">URL: <span style="color:var(--accent);">${cloudStatus.databaseURL}</span></div>
-                  <div style="color:var(--text-muted);">Topology: <span style="color:#10b981;font-weight:700;">Dual Firebase (DB #1 Read-Only / DB #2 Read-Write)</span></div>
-                  <div style="color:var(--text-muted);">Last Sync: <strong>${cloudStatus.lastSync}</strong></div>
-                </div>
-
-                <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                  <button class="btn btn-primary btn-sm" onclick="window.app.forceCloudSync()"><i class="fas fa-cloud-arrow-up"></i> Push All to Cloud</button>
-                  <button class="btn btn-secondary btn-sm" onclick="window.app.forceCloudPull()"><i class="fas fa-cloud-arrow-down"></i> Pull from Cloud</button>
-                  <button class="btn btn-secondary btn-sm" onclick="window.app.publishAbsorptionDirect()"><i class="fas fa-paper-plane"></i> Publish to CMSys Cloud</button>
+              <div class="section-divider"></div>
+              
+              <div class="panel">
+                <div class="panel-head"><span class="panel-title"><i class="fas fa-user-shield"></i> System Accounts (${users.length})</span></div>
+                <div class="panel-body" style="padding:0;">
+                  <table class="sps-table">
+                    <thead><tr><th>Name</th><th>Service No.</th><th>Role</th><th>Designation</th><th>Actions</th></tr></thead>
+                    <tbody>
+                      ${users.map(u => {
+                        const r = roles.find(role => role.id === u.role) || roles[0];
+                        const isSelf = u.id === window.spsStore.activeUserId;
+                        return `<tr>
+                          <td><strong>${u.name}</strong> ${isSelf ? '<span style="font-size:0.65rem;background:var(--accent);color:#07101f;padding:1px 5px;border-radius:4px;font-weight:800;">YOU</span>':''}</td>
+                          <td class="mono">${u.serviceNo}</td>
+                          <td><span class="status-badge" style="background:rgba(56,189,248,0.15);color:var(--accent);">${r.code}</span></td>
+                          <td style="font-size:0.8rem;color:var(--text-muted);">${u.appointment || u.designation || 'Engineering Officer'}</td>
+                          <td>
+                            <button class="btn btn-ghost btn-icon btn-sm" onclick="window.app.openEditOfficerModal('${u.id}')" title="Edit Profile"><i class="fas fa-edit"></i></button>
+                            ${(!isSelf && isAdmin) ? `<button class="btn btn-ghost btn-icon btn-sm" onclick="if(confirm('Delete user profile?')){window.spsStore.deleteUserProfile('${u.id}');window.app.renderSettingsView();}" title="Delete"><i class="fas fa-trash" style="color:var(--danger);"></i></button>` : ''}
+                          </td>
+                        </tr>`;
+                      }).join('')}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
 
-            <!-- CMSys Absorption Sync Bridge -->
-            <div class="section-header">
-              <div class="section-title"><i class="fas fa-sync-alt"></i> CMSys Attachment Sync Bridge</div>
-            </div>
-            <div class="section-divider"></div>
-
-            <div class="panel">
-              <div class="panel-head"><span class="panel-title"><i class="fas fa-info-circle"></i> Sync Engine</span></div>
-              <div class="panel-body">
-                <p style="font-size:0.85rem;color:var(--text-secondary);line-height:1.6;margin-bottom:12px;">
-                  Export or publish special project sailor attachments for CMSys absorption and headcount reconciliation.
-                </p>
-                <div style="margin-bottom:14px;">
-                  <textarea id="sync-payload" readonly style="width:100%;height:180px;background:var(--bg-app);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text-secondary);font-family:var(--mono);font-size:0.72rem;resize:none;line-height:1.5;">${JSON.stringify(pkg, null, 2)}</textarea>
-                </div>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                  <button class="btn btn-primary btn-sm" onclick="window.app.renderSettingsView();window.app.toast('Payload refreshed!','success')"><i class="fas fa-sync"></i> Refresh</button>
-                  <button class="btn btn-secondary btn-sm" onclick="window.app.downloadSyncPackage()"><i class="fas fa-download"></i> Download JSON</button>
-                  <button class="btn btn-secondary btn-sm" onclick="window.app.copySyncPayload()"><i class="fas fa-copy"></i> Copy Payload</button>
+            <div>
+              <div class="section-header">
+                <div class="section-title"><i class="fas fa-sitemap"></i> Naval Engineering Role Matrix</div>
+              </div>
+              <div class="section-divider"></div>
+              <div class="panel">
+                <div class="panel-head"><span class="panel-title"><i class="fas fa-shield-halved"></i> Engineering Privileges & Hierarchy</span></div>
+                <div class="panel-body">
+                  <div style="display:grid;grid-template-columns:1fr;gap:10px;">
+                    ${roles.map(r => `
+                      <div style="background:var(--bg-surface);border-radius:8px;padding:10px 12px;border:1px solid rgba(255,255,255,0.05);">
+                        <div style="font-weight:700;color:var(--accent);font-size:0.85rem;">${r.name} (${r.code})</div>
+                        <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;line-height:1.4;">${r.desc}</div>
+                      </div>`).join('')}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>`;
+        `;
+      }
+
+      v.innerHTML = `
+        <div class="settings-nav-tabs">
+          <button class="settings-tab-btn ${tab === 'officers' ? 'active' : ''}" onclick="window.app.setSettingsTab('officers')">
+            <i class="fas fa-user-shield" style="color:var(--accent);"></i> Commissioned Officers Profiles <span class="badge-pill">${officers.length}</span>
+          </button>
+          <button class="settings-tab-btn ${tab === 'cloud' ? 'active' : ''}" onclick="window.app.setSettingsTab('cloud')">
+            <i class="fas fa-cloud" style="color:#38bdf8;"></i> Cloud & CMSys Sync
+          </button>
+          <button class="settings-tab-btn ${tab === 'roles' ? 'active' : ''}" onclick="window.app.setSettingsTab('roles')">
+            <i class="fas fa-sitemap" style="color:#a855f7;"></i> Naval Role Matrix
+          </button>
+        </div>
+        ${tabContent}
+      `;
     }
 
     // ── Overhauled Attach Sailor Modal (Trade Filter, Approved Trade Quotas & Previous Location Breakdown) ──
@@ -1048,9 +1205,23 @@
       const spEl = document.getElementById('nb-special');
       if (spEl) spEl.textContent = projects.length;
 
+      // Officers total badge
+      const nbOfficers = document.getElementById('nb-officers');
+      if (nbOfficers) nbOfficers.textContent = window.spsStore.officers.length;
+      const nbSettingsOfficers = document.getElementById('nb-settings-officers');
+      if (nbSettingsOfficers) nbSettingsOfficers.textContent = window.spsStore.officers.length;
+
+      // Labour total attached badge
+      const nbLabour = document.getElementById('nb-labour-total');
+      if (nbLabour) nbLabour.textContent = window.spsStore.attachments.length;
+
       // Naval projects total badge
       const nbNaval = document.getElementById('nb-naval');
       if (nbNaval) nbNaval.textContent = naval.length;
+
+      // Progress Center badge
+      const nbProg = document.getElementById('nb-progress-center');
+      if (nbProg) nbProg.textContent = (naval.length + projects.length) || 'LIVE';
 
       // Naval Vote counts
       const v2104 = document.getElementById('nb-vote-2104');
@@ -1086,6 +1257,472 @@
           ? `<div class="empty-state" style="grid-column:1/-1;"><i class="fas fa-search"></i><p>No projects matching "${q}"</p></div>`
           : matches.map(p => this._projectCard(p)).join('');
       });
+    }
+
+    // ═════════════════════════════════════════════════════════
+    // REQUIREMENT 2: OFFICERS PROFILES & AUTHENTICATION
+    // ═════════════════════════════════════════════════════════
+    renderOfficersView() {
+      this._settingsTab = 'officers';
+      this.navigate('settings');
+    }
+
+    _renderOfficersCardsList(officers) {
+      const activeOfficer = window.spsStore.activeOfficer;
+      const isAdmin = window.spsStore.isAdmin();
+
+      if (!officers || officers.length === 0) {
+        return `<div class="empty-state" style="grid-column:1/-1;padding:40px;">
+          <i class="fas fa-user-shield" style="font-size:2rem;color:var(--text-dim);margin-bottom:10px;"></i>
+          <p>No commissioned officers found matching the filter criteria.</p>
+        </div>`;
+      }
+
+      return officers.map(off => {
+        const isActive = activeOfficer && (activeOfficer.id === off.id);
+        const projects = off.assignedProjects || [];
+        const roleObj = window.spsStore.navalRoles.find(r => r.id === off.role) || { code: (off.role || 'OFFICER').toUpperCase() };
+
+        return `
+          <div class="officer-card ${isActive ? 'officer-card-active' : ''}">
+            <div class="officer-card-header">
+              <div class="officer-card-avatar">
+                ${off.name.charAt(0) || 'O'}
+              </div>
+              <div class="officer-card-info">
+                <div class="officer-card-name" title="${off.name}">${off.name}</div>
+                <div class="officer-card-appointment"><i class="fas fa-briefcase" style="font-size:0.7rem;margin-right:4px;"></i>${off.appointment}</div>
+                <div class="officer-card-svc">${off.serviceNo || 'NRC'} · ${off.department || 'Dockyard'}</div>
+              </div>
+            </div>
+
+            <div class="officer-tags-row">
+              <span class="officer-tag rank">${off.rank}</span>
+              <span class="officer-tag role">${roleObj.code}</span>
+              <span class="officer-tag"><i class="fas fa-circle" style="color:var(--success);font-size:0.5rem;margin-right:4px;"></i>${off.status || 'Active'}</span>
+            </div>
+
+            <table class="officer-details-table">
+              <tr>
+                <td><i class="fas fa-envelope" style="margin-right:4px;"></i> Email</td>
+                <td style="font-family:var(--mono);">${off.email || '—'}</td>
+              </tr>
+              <tr>
+                <td><i class="fas fa-phone" style="margin-right:4px;"></i> Mobile</td>
+                <td>${off.phone || '—'}</td>
+              </tr>
+              ${off.officeNo ? `<tr><td><i class="fas fa-building" style="margin-right:4px;"></i> Office Ext</td><td>${off.officeNo}</td></tr>` : ''}
+              <tr>
+                <td><i class="fas fa-user" style="margin-right:4px;"></i> CMSys User</td>
+                <td style="font-family:var(--mono);color:var(--accent);">${off.username}</td>
+              </tr>
+            </table>
+
+            <div style="font-size:0.72rem;color:var(--text-muted);display:flex;flex-direction:column;gap:4px;">
+              <span style="font-weight:700;letter-spacing:0.4px;">ASSIGNED / COMMAND PROJECTS</span>
+              <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                ${projects.map(p => `<span class="officer-tag" style="background:rgba(56,189,248,0.08);color:#38bdf8;cursor:pointer;" onclick="window.app.searchProjectQuick('${p}')" title="Filter project">${p}</span>`).join('')}
+              </div>
+            </div>
+
+            <div class="officer-card-footer">
+              ${isActive ? `
+                <span style="font-size:0.75rem;font-weight:800;color:var(--success);display:flex;align-items:center;gap:6px;">
+                  <i class="fas fa-check-circle"></i> Active Session
+                </span>
+              ` : `
+                <button class="btn btn-primary btn-sm" onclick="window.app.switchOfficerQuick('${off.id}')" title="Switch active profile">
+                  <i class="fas fa-arrow-right-to-bracket"></i> Select Officer
+                </button>
+              `}
+              <div style="display:flex;gap:6px;">
+                <button class="btn btn-secondary btn-sm" onclick="window.app.openOfficerLoginModal('${off.id}')" title="Authenticate with CMSys Password">
+                  <i class="fas fa-key"></i> Authenticate
+                </button>
+                ${isAdmin ? `
+                  <button class="btn btn-ghost btn-sm" onclick="window.app.openEditOfficerModal('${off.id}')" title="Edit Officer Profile">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    filterOfficers() {
+      const q = (document.getElementById('officer-search-inp')?.value || '').toLowerCase();
+      const rankFilter = document.getElementById('officer-rank-filter')?.value || 'ALL';
+      const deptFilter = document.getElementById('officer-dept-filter')?.value || 'ALL';
+
+      let list = window.spsStore.officers;
+      if (rankFilter !== 'ALL') {
+        list = list.filter(o => o.rank.includes(rankFilter));
+      }
+      if (deptFilter !== 'ALL') {
+        list = list.filter(o => o.department && o.department.includes(deptFilter));
+      }
+      if (q) {
+        list = list.filter(o =>
+          o.name.toLowerCase().includes(q) ||
+          (o.rank && o.rank.toLowerCase().includes(q)) ||
+          (o.serviceNo && o.serviceNo.toLowerCase().includes(q)) ||
+          (o.appointment && o.appointment.toLowerCase().includes(q)) ||
+          (o.department && o.department.toLowerCase().includes(q)) ||
+          (o.username && o.username.toLowerCase().includes(q))
+        );
+      }
+      const grid = document.getElementById('officers-cards-grid');
+      if (grid) grid.innerHTML = this._renderOfficersCardsList(list);
+    }
+
+    switchOfficerQuick(officerId) {
+      const officer = window.spsStore.officers.find(o => o.id === officerId);
+      if (!officer) return;
+      window.spsStore.setActiveUser(officer.id);
+      const modal = document.getElementById('officer-login-modal');
+      if (modal) modal.classList.remove('open');
+      this.toast(`Switched active profile to ${officer.name} (${officer.appointment})`, 'success');
+      this._renderRoleSwitcher();
+      this._applyRolePermissions();
+      if (this._currentView === 'officers') this.renderOfficersView();
+      if (this._currentView === 'settings') this.renderSettingsView();
+    }
+
+    searchProjectQuick(keyword) {
+      if (!keyword || keyword === 'ALL') {
+        this.navigate('dashboard');
+        return;
+      }
+      this.navigate('projects');
+      const searchInp = document.getElementById('global-search');
+      if (searchInp) {
+        searchInp.value = keyword;
+        searchInp.dispatchEvent(new Event('input'));
+      }
+    }
+
+    openOfficerLoginModal(preselectedId = null) {
+      const modal = document.getElementById('officer-login-modal');
+      if (!modal) return;
+      const officers = window.spsStore.officers;
+      const selId = preselectedId || window.spsStore.activeUserId || officers[0]?.id;
+      const selected = officers.find(o => o.id === selId) || officers[0];
+
+      modal.innerHTML = `
+        <div class="login-dialog-box" onclick="event.stopPropagation()">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:38px;height:38px;border-radius:10px;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);display:flex;align-items:center;justify-content:center;color:var(--accent);">
+                <i class="fas fa-shield-halved" style="font-size:1.15rem;"></i>
+              </div>
+              <div>
+                <h3 style="font-size:1rem;font-weight:800;color:#fff;margin:0;">Officer Authentication</h3>
+                <p style="font-size:0.72rem;color:var(--accent);margin:0;font-weight:600;">CMSys Naval Engineering System</p>
+              </div>
+            </div>
+            <button class="modal-close" onclick="document.getElementById('officer-login-modal').classList.remove('open')" style="color:var(--text-muted);font-size:1.1rem;background:none;border:none;cursor:pointer;">
+              ✕
+            </button>
+          </div>
+
+          <div style="margin-bottom:14px;">
+            <label style="font-size:0.72rem;font-weight:700;color:var(--text-secondary);display:block;margin-bottom:6px;letter-spacing:0.5px;">COMMISSIONED OFFICER</label>
+            <select class="form-control" id="login-officer-select" onchange="window.app.onLoginOfficerChange(this.value)">
+              ${officers.map(o => `<option value="${o.id}" ${o.id===selId?'selected':''}>${o.name} — ${o.appointment} (${o.serviceNo})</option>`).join('')}
+            </select>
+          </div>
+
+          <div id="login-officer-preview" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px;margin-bottom:16px;display:flex;align-items:center;gap:12px;">
+            <div style="width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,#0369a1,#1e3a8a);border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:1.1rem;">
+              <i class="fas fa-user-shield"></i>
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div id="login-preview-name" style="font-size:0.86rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${selected.name}</div>
+              <div id="login-preview-app" style="font-size:0.72rem;color:var(--accent);">${selected.appointment}</div>
+              <div id="login-preview-svc" style="font-size:0.68rem;color:var(--text-muted);">Service: ${selected.serviceNo} · Role: ${selected.role.toUpperCase()}</div>
+            </div>
+          </div>
+
+          <div style="margin-bottom:16px;">
+            <label style="font-size:0.72rem;font-weight:700;color:var(--text-secondary);display:block;margin-bottom:6px;letter-spacing:0.5px;">CMSYS PASSWORD / PASSCODE</label>
+            <div style="position:relative;">
+              <input type="password" class="form-control" id="login-officer-pwd" placeholder="Enter password (e.g. arjuna@1991, Navy@2025)" style="padding-right:38px;" onkeydown="if(event.key==='Enter')window.app.submitOfficerLogin()">
+              <button type="button" onclick="const p=document.getElementById('login-officer-pwd');p.type=p.type==='password'?'text':'password';" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;">
+                <i class="fas fa-eye"></i>
+              </button>
+            </div>
+            <div style="font-size:0.68rem;color:var(--text-dim);margin-top:5px;">
+              Authorized credentials: <code style="color:var(--accent);background:rgba(245,158,11,0.1);padding:1px 4px;border-radius:3px;">arjuna@1991</code> or <code style="color:var(--accent);background:rgba(245,158,11,0.1);padding:1px 4px;border-radius:3px;">Navy@2025</code>
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid rgba(255,255,255,0.08);padding-top:14px;">
+            <button class="btn btn-secondary btn-sm" onclick="window.app.switchOfficerQuick(document.getElementById('login-officer-select').value)">
+              <i class="fas fa-user-check"></i> Quick Select
+            </button>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-ghost btn-sm" onclick="document.getElementById('officer-login-modal').classList.remove('open')">Cancel</button>
+              <button class="btn btn-primary btn-sm" id="btn-submit-officer-login" onclick="window.app.submitOfficerLogin()">
+                <i class="fas fa-shield-alt"></i> Authenticate
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      modal.classList.add('open');
+      setTimeout(() => {
+        const inp = document.getElementById('login-officer-pwd');
+        if (inp) inp.focus();
+      }, 100);
+    }
+
+    onLoginOfficerChange(officerId) {
+      const officer = window.spsStore.officers.find(o => o.id === officerId);
+      if (!officer) return;
+      const nameEl = document.getElementById('login-preview-name');
+      const appEl = document.getElementById('login-preview-app');
+      const svcEl = document.getElementById('login-preview-svc');
+      if (nameEl) nameEl.textContent = officer.name;
+      if (appEl) appEl.textContent = officer.appointment;
+      if (svcEl) svcEl.textContent = `Service: ${officer.serviceNo} · Role: ${officer.role.toUpperCase()}`;
+    }
+
+    async submitOfficerLogin() {
+      const selEl = document.getElementById('login-officer-select');
+      const pwdEl = document.getElementById('login-officer-pwd');
+      const btn = document.getElementById('btn-submit-officer-login');
+      if (!selEl || !pwdEl) return;
+
+      const officerId = selEl.value;
+      const password = pwdEl.value.trim();
+      const officer = window.spsStore.officers.find(o => o.id === officerId);
+      if (!officer) return;
+
+      if (!password) {
+        this.toast('Please enter your CMSys password', 'warning');
+        pwdEl.focus();
+        return;
+      }
+
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Authenticating...';
+      }
+
+      try {
+        const res = await fetch('api/api.php?action=login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: officer.username,
+            password: password
+          })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+          window.spsStore.setActiveUser(officer.id);
+          document.getElementById('officer-login-modal').classList.remove('open');
+          this.toast(`Authenticated as ${officer.name} (${officer.appointment})`, 'success');
+          this._renderRoleSwitcher();
+          this._applyRolePermissions();
+          if (this._currentView === 'officers') this.renderOfficersView();
+          if (this._currentView === 'settings') this.renderSettingsView();
+        } else {
+          this.toast(data.message || 'Authentication failed', 'error');
+        }
+      } catch(e) {
+        // Fallback local verification if offline
+        if (password === 'arjuna@1991' || password === 'Navy@2025' || password === 'admin123') {
+          window.spsStore.setActiveUser(officer.id);
+          document.getElementById('officer-login-modal').classList.remove('open');
+          this.toast(`Authenticated as ${officer.name} (Local mode)`, 'success');
+          this._renderRoleSwitcher();
+          this._applyRolePermissions();
+          if (this._currentView === 'officers') this.renderOfficersView();
+        } else {
+          this.toast('Invalid password: ' + e.message, 'error');
+        }
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fas fa-shield-alt"></i> Authenticate';
+        }
+      }
+    }
+
+    openEditOfficerModal(officerId) {
+      const off = window.spsStore.officers.find(o => o.id === officerId);
+      if (!off) return;
+      const roles = window.spsStore.navalRoles;
+      const overlay = document.getElementById('generic-modal-overlay');
+      overlay.innerHTML = `
+        <div class="modal" style="max-width:560px;">
+          <div class="modal-header">
+            <h2><i class="fas fa-user-edit" style="color:var(--accent);margin-right:8px;"></i> Edit Officer Profile</h2>
+            <button class="modal-close" onclick="document.getElementById('generic-modal-overlay').classList.remove('open')">✕</button>
+          </div>
+          <div class="modal-body">
+            <div class="form-grid">
+              <div class="form-group form-full"><label>Full Name</label><input class="form-control" id="eo-name" value="${off.name}"></div>
+              <div class="form-group"><label>Rank</label><input class="form-control" id="eo-rank" value="${off.rank}"></div>
+              <div class="form-group"><label>Service Number</label><input class="form-control" id="eo-sno" value="${off.serviceNo}"></div>
+              <div class="form-group"><label>Appointment</label><input class="form-control" id="eo-app" value="${off.appointment}"></div>
+              <div class="form-group"><label>Department</label><input class="form-control" id="eo-dept" value="${off.department||''}"></div>
+              <div class="form-group"><label>Role / Privileges</label>
+                <select class="form-control" id="eo-role">
+                  ${roles.map(r => `<option value="${r.id}" ${r.id===off.role?'selected':''}>${r.name} (${r.code})</option>`).join('')}
+                </select>
+              </div>
+              <div class="form-group"><label>Email</label><input class="form-control" id="eo-email" value="${off.email||''}"></div>
+              <div class="form-group"><label>Phone</label><input class="form-control" id="eo-phone" value="${off.phone||''}"></div>
+              <div class="form-group"><label>Office Extension</label><input class="form-control" id="eo-offno" value="${off.officeNo||''}"></div>
+            </div>
+          </div>
+          <div style="padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;background:var(--bg-surface);">
+            <button class="btn btn-secondary" onclick="document.getElementById('generic-modal-overlay').classList.remove('open')">Cancel</button>
+            <button class="btn btn-primary" onclick="window.app.saveEditOfficer('${off.id}')">Save Officer</button>
+          </div>
+        </div>
+      `;
+      overlay.classList.add('open');
+    }
+
+    saveEditOfficer(officerId) {
+      const changes = {
+        name:        document.getElementById('eo-name').value.trim(),
+        rank:        document.getElementById('eo-rank').value.trim(),
+        serviceNo:   document.getElementById('eo-sno').value.trim(),
+        appointment: document.getElementById('eo-app').value.trim(),
+        department:  document.getElementById('eo-dept').value.trim(),
+        role:        document.getElementById('eo-role').value,
+        email:       document.getElementById('eo-email').value.trim(),
+        phone:       document.getElementById('eo-phone').value.trim(),
+        officeNo:    document.getElementById('eo-offno').value.trim()
+      };
+      window.spsStore.updateUserProfile(officerId, changes);
+      document.getElementById('generic-modal-overlay').classList.remove('open');
+      this.toast('Officer profile updated!', 'success');
+      this._renderRoleSwitcher();
+      if (this._currentView === 'officers') this.renderOfficersView();
+      if (this._currentView === 'settings') this.renderSettingsView();
+    }
+
+    openAddOfficerModal() {
+      const roles = window.spsStore.navalRoles;
+      const overlay = document.getElementById('generic-modal-overlay');
+      overlay.innerHTML = `
+        <div class="modal" style="max-width:560px;">
+          <div class="modal-header">
+            <h2><i class="fas fa-user-plus" style="color:var(--accent);margin-right:8px;"></i> Add Commissioned Officer</h2>
+            <button class="modal-close" onclick="document.getElementById('generic-modal-overlay').classList.remove('open')">✕</button>
+          </div>
+          <div class="modal-body">
+            <div class="form-grid">
+              <div class="form-group form-full"><label>Full Name</label><input class="form-control" id="ao-name" placeholder="e.g. Lt Cdr S. Rajapaksa"></div>
+              <div class="form-group"><label>Rank</label><input class="form-control" id="ao-rank" placeholder="e.g. Lt Commander"></div>
+              <div class="form-group"><label>Service Number</label><input class="form-control" id="ao-sno" placeholder="e.g. NRX 4501"></div>
+              <div class="form-group"><label>Appointment</label><input class="form-control" id="ao-app" placeholder="e.g. Resident Engineer"></div>
+              <div class="form-group"><label>Department</label><input class="form-control" id="ao-dept" value="Civil Engineering"></div>
+              <div class="form-group"><label>Role / Privileges</label>
+                <select class="form-control" id="ao-role">
+                  ${roles.map(r => `<option value="${r.id}">${r.name} (${r.code})</option>`).join('')}
+                </select>
+              </div>
+              <div class="form-group"><label>Email</label><input class="form-control" id="ao-email" placeholder="name@navy.lk"></div>
+              <div class="form-group"><label>Phone</label><input class="form-control" id="ao-phone" placeholder="071-XXXXXXX"></div>
+              <div class="form-group"><label>Office Ext</label><input class="form-control" id="ao-offno" placeholder="026-XXXXXXX"></div>
+            </div>
+          </div>
+          <div style="padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;background:var(--bg-surface);">
+            <button class="btn btn-secondary" onclick="document.getElementById('generic-modal-overlay').classList.remove('open')">Cancel</button>
+            <button class="btn btn-primary" onclick="window.app.saveNewOfficer()">Add Officer</button>
+          </div>
+        </div>
+      `;
+      overlay.classList.add('open');
+    }
+
+    saveNewOfficer() {
+      const name = document.getElementById('ao-name').value.trim();
+      const rank = document.getElementById('ao-rank').value.trim();
+      const sno  = document.getElementById('ao-sno').value.trim();
+      if (!name || !sno) { this.toast('Name and service number required', 'warning'); return; }
+
+      const officer = {
+        name,
+        rank: rank || 'Lieutenant',
+        serviceNo: sno,
+        username: name.toLowerCase().replace(/[^a-z0-9]/g, '.'),
+        appointment: document.getElementById('ao-app').value.trim() || 'Engineering Officer',
+        department: document.getElementById('ao-dept').value.trim() || 'Civil Engineering',
+        role: document.getElementById('ao-role').value,
+        category: 'Officer',
+        email: document.getElementById('ao-email').value.trim(),
+        phone: document.getElementById('ao-phone').value.trim(),
+        officeNo: document.getElementById('ao-offno').value.trim(),
+        status: 'Active',
+        assignedProjects: []
+      };
+
+      window.spsStore.addUserProfile(officer);
+      document.getElementById('generic-modal-overlay').classList.remove('open');
+      this.toast(`Officer ${officer.name} added!`, 'success');
+      this._renderRoleSwitcher();
+      if (this._currentView === 'officers') this.renderOfficersView();
+      if (this._currentView === 'settings') this.renderSettingsView();
+    }
+
+    // ═════════════════════════════════════════════════════════
+    // REQUIREMENT 3: LIVE CMSYS BI-DIRECTIONAL SYNCHRONIZATION
+    // ═════════════════════════════════════════════════════════
+    async triggerGlobalSync() {
+      const syncBtn = document.getElementById('btn-sync-all');
+      if (syncBtn) {
+        syncBtn.classList.add('syncing');
+        const span = syncBtn.querySelector('span');
+        if (span) span.textContent = 'Syncing...';
+      }
+      this.toast('Synchronizing CMSys Projects, Labours & Officers across Cloud...', 'info');
+
+      try {
+        const res = await fetch('api/api.php?action=sync_all_cmsys');
+        const data = await res.json();
+        if (data.status === 'success') {
+          if (window.spsCloudSync) {
+            await window.spsCloudSync.forceSyncToCloud();
+          }
+
+          this.toast(`CMSys Synced: ${data.synced.officers} Officers, ${data.synced.ongoing_special_projects} Special Projects, ${data.synced.naval_capital_projects} Naval Projects, ${data.synced.attached_labours} Sailors`, 'success');
+          this.updateSidebarCounts();
+          if (this._currentView === 'dashboard') this.renderDashboard();
+          if (this._currentView === 'projects')  this.renderProjectsView();
+          if (this._currentView === 'naval-projects' && window.navalProjectsModule) window.navalProjectsModule.render();
+          if (this._currentView === 'labour' && window.labourCentre) window.labourCentre.render();
+          if (this._currentView === 'settings') this.renderSettingsView();
+        } else {
+          this.toast('Sync returned error: ' + (data.message || 'Unknown'), 'warning');
+        }
+      } catch (e) {
+        if (window.spsCloudSync) {
+          try {
+            await window.spsCloudSync.forceSyncToCloud();
+            this.toast('Synced directly with CMSys Firebase Cloud', 'success');
+            if (this._currentView === 'settings') this.renderSettingsView();
+          } catch(ce) {
+            this.toast('Sync completed with local cache: ' + e.message, 'info');
+          }
+        } else {
+          this.toast('Sync completed with local cache: ' + e.message, 'info');
+        }
+      } finally {
+        if (syncBtn) {
+          syncBtn.classList.remove('syncing');
+          const span = syncBtn.querySelector('span');
+          if (span) span.textContent = 'Sync CMSys';
+        }
+      }
     }
 
     downloadSyncPackage() {

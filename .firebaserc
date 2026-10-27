@@ -1,5 +1,14 @@
 {
   "projects": {
-    "default": "cmsys-projects"
+    "default": "cmsys-v2"
+  },
+  "targets": {
+    "cmsys-v2": {
+      "hosting": {
+        "projects": [
+          "cmsys-projects-v2"
+        ]
+      }
+    }
   }
 }
