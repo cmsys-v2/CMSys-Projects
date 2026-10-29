@@ -223,7 +223,7 @@ try {
             $navalProjects = $navalData['naval_projects'] ?? [];
             $procurementFiles = $navalData['procurement_files'] ?? [];
 
-            // Push to cmsys-projects Cloud RTDB
+            // Push to cmsys-v2 Cloud RTDB
             $p1 = firebase_rtdb_request('PUT', 'special_projects', $specialProjects);
             $p2 = firebase_rtdb_request('PUT', 'special_project_attachments', $attachments);
             $p3 = firebase_rtdb_request('PUT', 'naval_projects', $navalProjects);
@@ -234,9 +234,9 @@ try {
             $statusPayload = [
                 'system' => 'CMSys Project Platform — Sri Lanka Navy Dockyard Trincomalee',
                 'name' => 'CMSys Project',
-                'version' => '5.2.0',
+                'version' => '5.3.0',
                 'status' => 'online',
-                'cluster' => 'cmsys-projects (asia-southeast1)',
+                'cluster' => 'cmsys-v2 (asia-southeast1)',
                 'last_sync' => date('c'),
                 'counts' => [
                     'officers' => count($officersData),
@@ -343,7 +343,7 @@ try {
                     'status' => 'success',
                     'source' => 'CMSys Sync Engine',
                     'timestamp' => date('Y-m-d H:i:s'),
-                    'message' => 'Absorption payload successfully published to cmsys-projects cloud backend',
+                    'message' => 'Absorption payload successfully published to cmsys-v2 cloud backend',
                     'attached_sailors_count' => count($payload['attachments'] ?? []),
                     'cloud_write' => $saveRes['success']
                 ]);
