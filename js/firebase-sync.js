@@ -1,17 +1,17 @@
 // ============================================================
-// SPS — Firebase Sailor Details & CMSys Sync Engine
-// Dual connection: ce-admin-panel2025 (Sailor DB, Availability, Out Projects)
+// SPS — Firebase Personnel & Availability Sync Engine (cmsys-v2)
+// Unified Architecture: cmsys-v2 (Sailor Registry, Availability, Out Projects)
 // Integrates full sailor profiles, real-time leaves, sick logs, and victualing
 // ============================================================
 (function() {
   'use strict';
 
   const FIREBASE_CONFIG = {
-    apiKey: "AIzaSyDmHdg1FfgR_-4pKJ5z0inI8-BZ21MUtvg",
-    authDomain: "ce-admin-panel2025.firebaseapp.com",
-    databaseURL: "https://ce-admin-panel2025-default-rtdb.firebaseio.com",
-    projectId: "ce-admin-panel2025",
-    storageBucket: "ce-admin-panel2025.firebasestorage.app",
+    apiKey: "AIzaSyDpxQzPBylQeLTXmgiF6GSVtGG_FrIo900",
+    authDomain: "cmsys-v2.firebaseapp.com",
+    databaseURL: "https://cmsys-v2-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "cmsys-v2",
+    storageBucket: "cmsys-v2.firebasestorage.app",
     messagingSenderId: "1093761746400",
     appId: "1:1093761746400:web:1984fad8019641b2ca5785"
   };
@@ -27,7 +27,7 @@
       // 1. Immediately load local authoritative cache for instantaneous, zero-delay boot
       await this.loadLocalCache();
 
-      // 2. Connect to live Firebase ce-admin-panel2025 in background
+      // 2. Connect to live Firebase cmsys-v2 in background
       try {
         if (typeof firebase === 'undefined') { throw new Error('Firebase SDK not available'); }
         const appName = 'sps_sailors';

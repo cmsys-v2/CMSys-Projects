@@ -2956,7 +2956,7 @@ const FirebaseManager = (() => {
         db1.ref('.info/connected').on('value', snap => {
           status1 = snap.val() ? 'live' : 'error';
           updateDots();
-          addSyncLog(`DB1 (ce-admin-panel2025) — ${status1 === 'live' ? 'Connected' : 'Disconnected'}`, status1 === 'live');
+          addSyncLog(`Unified Node 1 (cmsys-v2: sailors) — ${status1 === 'live' ? 'Connected' : 'Disconnected'}`, status1 === 'live');
           if (status1 === 'live' && window.CivilPM && window.CivilPM.store) {
             db1.ref('sailors').once('value', sSnap => {
               const val = sSnap.val();
@@ -2964,7 +2964,7 @@ const FirebaseManager = (() => {
                 const list = Array.isArray(val) ? val : Object.values(val);
                 if (list.length) {
                   window.CivilPM.store.setState({ sailors: list });
-                  addSyncLog(`DB1 synced ${list.length} sailor records from ce-admin-panel2025`, true);
+                  addSyncLog(`Unified Node 1 synced ${list.length} sailor records from cmsys-v2`, true);
                 }
               }
             }).catch(e => { addSyncLog(`DB1 sync notice: ${e.message}`, false); });
@@ -2981,7 +2981,7 @@ const FirebaseManager = (() => {
         db2.ref('.info/connected').on('value', snap => {
           status2 = snap.val() ? 'live' : 'error';
           updateDots();
-          addSyncLog(`DB2 (cmsys-projects) — ${status2 === 'live' ? 'Connected' : 'Disconnected'}`, status2 === 'live');
+          addSyncLog(`Unified Node 2 (cmsys-v2: projects) — ${status2 === 'live' ? 'Connected' : 'Disconnected'}`, status2 === 'live');
           if (status2 === 'live' && window.CivilPM && window.CivilPM.store) {
             // Bidirectional read synchronization for tasks, equipment and materials
             db2.ref('tasks').on('value', tSnap => {
@@ -3699,8 +3699,8 @@ const CivilPM = (() => {
       svg.innerHTML = `
         <!-- DB1 Box -->
         <rect x="20" y="80" width="160" height="100" rx="10" fill="#1a2540" stroke="#38bdf8" stroke-width="1.5"/>
-        <text x="100" y="108" text-anchor="middle" fill="#38bdf8" font-family="Inter,sans-serif" font-weight="700" font-size="12">Firebase DB1</text>
-        <text x="100" y="126" text-anchor="middle" fill="#94a3b8" font-family="Inter,sans-serif" font-size="10">ce-admin-panel2025</text>
+        <text x="100" y="108" text-anchor="middle" fill="#38bdf8" font-family="Inter,sans-serif" font-weight="700" font-size="12">Unified Node 1</text>
+        <text x="100" y="126" text-anchor="middle" fill="#94a3b8" font-family="Inter,sans-serif" font-size="10">cmsys-v2 /sailors</text>
         <text x="100" y="143" text-anchor="middle" fill="#94a3b8" font-family="Inter,sans-serif" font-size="10">661 Sailor Records</text>
         <text x="100" y="160" text-anchor="middle" fill="${stat.db1==='live'?'#10b981':'#ef4444'}" font-family="JetBrains Mono,monospace" font-size="11">● ${stat.db1.toUpperCase()}</text>
         <text x="100" y="174" text-anchor="middle" fill="#64748b" font-family="Inter,sans-serif" font-size="9">READ-ONLY</text>
@@ -3716,8 +3716,8 @@ const CivilPM = (() => {
 
         <!-- DB2 Box -->
         <rect x="600" y="80" width="160" height="100" rx="10" fill="#1a2540" stroke="#f59e0b" stroke-width="1.5"/>
-        <text x="680" y="108" text-anchor="middle" fill="#f59e0b" font-family="Inter,sans-serif" font-weight="700" font-size="12">Firebase DB2</text>
-        <text x="680" y="126" text-anchor="middle" fill="#94a3b8" font-family="Inter,sans-serif" font-size="10">cmsys-projects</text>
+        <text x="680" y="108" text-anchor="middle" fill="#f59e0b" font-family="Inter,sans-serif" font-weight="700" font-size="12">Unified Node 2</text>
+        <text x="680" y="126" text-anchor="middle" fill="#94a3b8" font-family="Inter,sans-serif" font-size="10">cmsys-v2 /projects</text>
         <text x="680" y="143" text-anchor="middle" fill="#94a3b8" font-family="Inter,sans-serif" font-size="10">asia-southeast1</text>
         <text x="680" y="160" text-anchor="middle" fill="${stat.db2==='live'?'#10b981':'#ef4444'}" font-family="JetBrains Mono,monospace" font-size="11">● ${stat.db2.toUpperCase()}</text>
         <text x="680" y="174" text-anchor="middle" fill="#64748b" font-family="Inter,sans-serif" font-size="9">READ-WRITE</text>
@@ -3757,8 +3757,8 @@ const CivilPM = (() => {
       if (!panel) return;
       const stat = FirebaseManager.getStatus();
       const dbs = [
-        { name:'DB1 — ce-admin-panel2025 (Personnel Pool)', stat: stat.db1, latency:'18ms', type:'Read-Only' },
-        { name:'DB2 — cmsys-projects (Projects R/W)',        stat: stat.db2, latency:'42ms', type:'Read-Write' }
+        { name:'Unified Node 1 — cmsys-v2 (/sailors)', stat: stat.db1, latency:'18ms', type:'Read-Only' },
+        { name:'Unified Node 2 — cmsys-v2 (/projects)', stat: stat.db2, latency:'42ms', type:'Read-Write' }
       ];
       panel.innerHTML = dbs.map(d => `
         <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">
