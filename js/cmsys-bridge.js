@@ -88,7 +88,7 @@ class CMSysSyncBridge {
     if (!payload) return;
 
     let cloudOk = false;
-    // 1. Publish directly to Firebase Database #2 (cmsys-projects)
+    // 1. Publish directly to Firebase Database (cmsys-v2)
     if (window.spsCloudSync) {
       try {
         cloudOk = await window.spsCloudSync.publishAbsorptionPackage(payload);
@@ -108,14 +108,14 @@ class CMSysSyncBridge {
       const resData = await response.json();
       if (resData.status === "success" || cloudOk) {
         this.lastSyncTimestamp = new Date().toLocaleTimeString();
-        if (window.app) window.app.showToast(`Published ${payload.attached_sailors_count} attachments to cmsys-projects Cloud & REST!`, "success");
+        if (window.app) window.app.showToast(`Published ${payload.attached_sailors_count} attachments to cmsys-v2 Cloud & REST!`, "success");
       } else {
         if (window.app) window.app.showToast("Sync completed locally.", "info");
       }
     } catch (e) {
       if (cloudOk) {
         this.lastSyncTimestamp = new Date().toLocaleTimeString();
-        if (window.app) window.app.showToast(`Published ${payload.attached_sailors_count} attachments to cmsys-projects Cloud!`, "success");
+        if (window.app) window.app.showToast(`Published ${payload.attached_sailors_count} attachments to cmsys-v2 Cloud!`, "success");
       } else {
         console.warn("⚠️ REST Sync fallback to local mode:", e);
         if (window.app) window.app.showToast("Sync ready for CMSys absorption.", "info");
