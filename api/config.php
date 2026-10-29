@@ -3,7 +3,7 @@
  * Special Project System (SPS) - Database & Server Configuration
  * Consolidated Unified Firebase Architecture:
  * Primary Unified RTDB: cmsys-v2 (asia-southeast1)
- * Decommissioned: ce-admin-panel2025, cmsys-projects, ncw-ps-operations, cmsys-v2-1fb05, cmsys-documents
+ * Decommissioned: legacy external endpoints consolidated into cmsys-v2
  */
 
 // Baseline Security Headers
