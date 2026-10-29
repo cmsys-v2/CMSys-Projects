@@ -1,13 +1,13 @@
 /**
  * CMSys Projects Platform — Firebase Backend Seeder & Verifier
- * Project: cmsys-projects (asia-southeast1)
- * RTDB URL: https://cmsys-projects-default-rtdb.asia-southeast1.firebasedatabase.app
+ * Project: cmsys-v2 (asia-southeast1)
+ * RTDB URL: https://cmsys-v2-default-rtdb.asia-southeast1.firebasedatabase.app
  */
 
 const fs = require('fs');
 const path = require('path');
 
-const RTDB_BASE = 'https://cmsys-projects-default-rtdb.asia-southeast1.firebasedatabase.app';
+const RTDB_BASE = 'https://cmsys-v2-default-rtdb.asia-southeast1.firebasedatabase.app';
 
 // Load local dataset files
 const navalDataPath = path.join(__dirname, '../data/naval_projects.json');
@@ -93,7 +93,7 @@ async function runSeed() {
       version: '5.0.0',
       last_seed_at: new Date().toISOString(),
       status: 'online',
-      cluster: 'cmsys-projects (asia-southeast1)',
+      cluster: 'cmsys-v2 (asia-southeast1)',
       counts: {
         naval_projects: navalProjects.length,
         procurement_files: procurementFiles.length,

@@ -7,13 +7,13 @@
   'use strict';
 
   const CMSYS_CLOUD_CONFIG = {
-    apiKey: "AIzaSyDpxQzPBylQeLTXmgiF6GSVtGG_FrIo900",
+    apiKey: "AIzaSyD2taQsUz26yfLoqnFgs-ED6WcFveUXS8w",
     authDomain: "cmsys-v2.firebaseapp.com",
     databaseURL: "https://cmsys-v2-default-rtdb.asia-southeast1.firebasedatabase.app",
     projectId: "cmsys-v2",
     storageBucket: "cmsys-v2.firebasestorage.app",
-    messagingSenderId: "1093761746400",
-    appId: "1:1093761746400:web:1984fad8019641b2ca5785"
+    messagingSenderId: "743775137662",
+    appId: "1:743775137662:web:3f2fdd74cd06a31160cd2f"
   };
 
   class SPSCloudSyncEngine {
