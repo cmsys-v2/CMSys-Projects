@@ -1,20 +1,19 @@
 // ============================================================
-// SPS — Dedicated Cloud Sync Engine for Firebase Database #2
-// Project: cmsys-projects (Separate Account / asia-southeast1)
+// SPS — Unified Cloud Sync Engine for Firebase (cmsys-v2)
+// Project: cmsys-v2 (Unified Single-Project Architecture / asia-southeast1)
 // Connects Special Project System, Naval Projects, & CMSys V2 in Realtime
 // ============================================================
 (function() {
   'use strict';
 
   const CMSYS_CLOUD_CONFIG = {
-    apiKey: "AIzaSyCe0pHX7a-j_0u5AbllTPXOIQ6D0caLoLw",
-    authDomain: "cmsys-projects.firebaseapp.com",
-    databaseURL: "https://cmsys-projects-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "cmsys-projects",
-    storageBucket: "cmsys-projects.firebasestorage.app",
-    messagingSenderId: "366430411452",
-    appId: "1:366430411452:web:206cb47ecd2af8ffa98eb9",
-    measurementId: "G-Q7M7JNMKH0"
+    apiKey: "AIzaSyDpxQzPBylQeLTXmgiF6GSVtGG_FrIo900",
+    authDomain: "cmsys-v2.firebaseapp.com",
+    databaseURL: "https://cmsys-v2-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "cmsys-v2",
+    storageBucket: "cmsys-v2.firebasestorage.app",
+    messagingSenderId: "1093761746400",
+    appId: "1:1093761746400:web:1984fad8019641b2ca5785"
   };
 
   class SPSCloudSyncEngine {
@@ -55,7 +54,7 @@
           this.connected = Boolean(snap.val());
           this._updateUI(this.connected, this.connected ? 'Live' : 'Offline Cache');
           if (this.connected) {
-            console.log('✅ SPS Cloud: Connected to cmsys-projects RTDB');
+            console.log('✅ SPS Cloud: Connected to cmsys-v2 RTDB');
           } else {
             console.warn('⚠️ SPS Cloud: Disconnected, operating in offline cache mode');
           }
@@ -413,7 +412,7 @@
           ...payload,
           published_at: new Date().toISOString()
         });
-        console.log('✅ Absorption payload published to cmsys-projects cloud');
+        console.log('✅ Absorption payload published to cmsys-v2 cloud');
         return true;
       } catch (err) {
         console.warn('⚠️ Cloud absorption publication failed:', err);
@@ -442,7 +441,7 @@
       const el = document.getElementById('cloud-status-text');
       if (el) {
         el.innerHTML = connected
-          ? `<span class="pulse-dot" style="background:#10b981;"></span> Live (cmsys-projects)`
+          ? `<span class="pulse-dot" style="background:#10b981;"></span> Live (cmsys-v2)`
           : `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#f59e0b;margin-right:5px;"></span> ${label || 'Local Offline'}`;
       }
     }
