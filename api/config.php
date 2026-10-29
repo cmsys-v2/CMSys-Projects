@@ -1,9 +1,9 @@
 <?php
 /**
  * Special Project System (SPS) - Database & Server Configuration
- * Configured with Dual Firebase Topology:
- * DB #1 (Sailors Registry): ce-admin-panel2025 (Read-Only)
- * DB #2 (Special Projects & Operations): cmsys-projects (Read-Write)
+ * Consolidated Unified Firebase Architecture:
+ * Primary Unified RTDB: cmsys-v2 (asia-southeast1)
+ * Decommissioned: ce-admin-panel2025, cmsys-projects, ncw-ps-operations, cmsys-v2-1fb05, cmsys-documents
  */
 
 // Baseline Security Headers
@@ -34,10 +34,10 @@ define('DB_NAME', 'special_projects_db');
 define('DB_USER', 'root');
 define('DB_PASS', '');
 
-// Cloud Firebase Database #2 Configuration (Dedicated Google Account)
-define('FIREBASE_PROJECT_ID', 'cmsys-projects');
-define('FIREBASE_RTDB_URL', 'https://cmsys-projects-default-rtdb.asia-southeast1.firebasedatabase.app');
-define('FIREBASE_DB1_URL', 'https://ce-admin-panel2025-default-rtdb.firebaseio.com');
+// Unified Cloud Firebase Database Configuration (Target: cmsys-v2)
+define('FIREBASE_PROJECT_ID', 'cmsys-v2');
+define('FIREBASE_RTDB_URL', 'https://cmsys-v2-default-rtdb.asia-southeast1.firebasedatabase.app');
+define('FIREBASE_DB1_URL', 'https://cmsys-v2-default-rtdb.asia-southeast1.firebasedatabase.app');
 
 /**
  * Universal Firebase Realtime Database REST API Client
