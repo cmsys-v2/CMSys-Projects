@@ -32,10 +32,10 @@
       this._renderRoleSwitcher();
       this.navigate('dashboard');
 
-      // Init Firebase sailor sync (DB #1 ce-admin-panel2025: Read-Only)
+      // Init Firebase sailor sync (cmsys-v2: Read-Only)
       if (window.sailorSync) window.sailorSync.init();
 
-      // Init Firebase cloud operations sync (DB #2 cmsys-projects: Read-Write)
+      // Init Firebase cloud operations sync (cmsys-v2: Read-Write)
       if (window.spsCloudSync) window.spsCloudSync.init();
 
       // Link Gantt click → project detail
@@ -431,8 +431,8 @@
       const cloudStatus = window.spsCloudSync ? window.spsCloudSync.getStatus() : {
         connected: false,
         lastSync: 'Offline',
-        projectId: 'cmsys-projects',
-        databaseURL: 'https://cmsys-projects-default-rtdb.asia-southeast1.firebasedatabase.app',
+        projectId: 'cmsys-v2',
+        databaseURL: 'https://cmsys-v2-default-rtdb.asia-southeast1.firebasedatabase.app',
         region: 'asia-southeast1 (Singapore)'
       };
 
@@ -546,7 +546,7 @@
 
               <div class="panel" style="margin-bottom:20px;">
                 <div class="panel-head">
-                  <span class="panel-title"><i class="fas fa-database" style="color:var(--accent);"></i> Realtime Database (cmsys-projects)</span>
+                  <span class="panel-title"><i class="fas fa-database" style="color:var(--accent);"></i> Realtime Database (cmsys-v2)</span>
                   <span class="badge ${cloudStatus.connected ? 'badge-success' : 'badge-warning'}">
                     <i class="fas ${cloudStatus.connected ? 'fa-signal' : 'fa-triangle-exclamation'}"></i> ${cloudStatus.connected ? 'Cloud Connected' : 'Local Offline'}
                   </span>
@@ -1748,7 +1748,7 @@
         return;
       }
       try {
-        this.toast('Pushing all data to Firebase cmsys-projects...', 'info');
+        this.toast('Pushing all data to Firebase cmsys-v2...', 'info');
         const res = await window.spsCloudSync.forceSyncToCloud();
         this.toast(`Cloud Sync Complete! (${res.count} projects synced)`, 'success');
         this.renderSettingsView();
@@ -1765,7 +1765,7 @@
       try {
         this.toast('Pulling latest data from Firebase cloud...', 'info');
         await window.spsCloudSync.forcePullFromCloud();
-        this.toast('Refreshed data from cmsys-projects cloud!', 'success');
+        this.toast('Refreshed data from cmsys-v2 cloud!', 'success');
         this.renderSettingsView();
       } catch (e) {
         this.toast(`Cloud Pull Error: ${e.message}`, 'error');
@@ -1789,7 +1789,7 @@
       };
       if (window.spsCloudSync) {
         await window.spsCloudSync.publishAbsorptionPackage(payload);
-        this.toast(`Published ${atts.length} attachments to cmsys-projects!`, 'success');
+        this.toast(`Published ${atts.length} attachments to cmsys-v2!`, 'success');
         this.renderSettingsView();
       }
     }
