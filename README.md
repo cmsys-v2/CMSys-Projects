@@ -5,21 +5,20 @@ The **SLN Project Platform** is a unified, full-stack enterprise platform develo
 2. **Special Projects Suite (CSR & Welfare)**: Civil engineering community, religious, clean Sri Lanka, and naval welfare housing projects.
 3. **Quantity Surveying (QS) & BOQ Studio**: Full BOQ line-item management, Earned Value Management (EVM), and CPI/SPI metrics.
 4. **Full Resource Gantt Chart Studio**: Work Breakdown Structure (WBS), Critical Path Method (CPM), and daily sailor trade histograms.
-5. **Sailor Attachments & Equal Opportunity Engine**: Integrated with `ce-admin-panel2025` Firebase Realtime Database for trade allocation and fair rotation.
-6. **Dedicated Cloud RTDB (`cmsys-projects`)**: Realtime bidirectional synchronization for Naval Projects, Procurement Files, and Special Projects on `asia-southeast1`.
+5. **Sailor Attachments & Equal Opportunity Engine**: Integrated with `cmsys-v2` Firebase Realtime Database for trade allocation and fair rotation.
+6. **Consolidated Cloud RTDB (`cmsys-v2`)**: Realtime bidirectional synchronization for Naval Projects, Procurement Files, Special Projects, and Personnel on `asia-southeast1`.
 7. **CMSys Logistics & V2 Bridge**: Cloud synchronization and JSON absorption packages for seamless data interoperability.
 
 ---
 
-## 🏗️ System Architecture & Dual-Firebase Topology
+## 🏗️ System Architecture & Consolidated Firebase Topology (`cmsys-v2`)
 
 ```
                               ┌───────────────────────────────────────────────┐
-                              │          ce-admin-panel2025 (DB #1)           │
-                              │           Firebase Realtime Database          │
-                              │           (Personnel & Sailors Pool)          │
+                              │             cmsys-v2 Consolidated RTDB        │
+                              │      (Personnel, Projects & Procurement)      │
                               └──────────────────────┬────────────────────────┘
-                                                     │ (Read-Only Live Sync)
+                                                     │ (Live Realtime Sync)
                                                      ▼
 ┌─────────────────────────────────────────────────────────────────────────────────────────────┐
 │                                   SLN PROJECT PLATFORM                                      │
@@ -43,9 +42,9 @@ The **SLN Project Platform** is a unified, full-stack enterprise platform develo
                          ▲                       │ (Bi-directional Live RTDB Sync)
                          │                       ▼
                          │      ┌─────────────────────────────────────────┐
-                         │      │          cmsys-projects (DB #2)         │
-                         └──────┤        Firebase Realtime Database       │
-                                │   (Naval, Procurement, Special Projects)│
+                         │      │             cmsys-v2 RTDB               │
+                         └──────┤  https://cmsys-v2-default-rtdb          │
+                                │   .asia-southeast1.firebasedatabase.app │
                                 └────────────────┬────────────────────────┘
                                                  │ (Cross-system Absorption Package)
                                                  ▼
@@ -85,8 +84,8 @@ The **SLN Project Platform** is a unified, full-stack enterprise platform develo
 
 ## ☁️ Firebase Backend & CLI Configuration
 
-- **Target Project**: `cmsys-projects`
-- **RTDB Endpoint**: `https://cmsys-projects-default-rtdb.asia-southeast1.firebasedatabase.app`
+- **Target Project**: `cmsys-v2` (Consolidated Platform)
+- **RTDB Endpoint**: `https://cmsys-v2-default-rtdb.asia-southeast1.firebasedatabase.app`
 - **Database Rules**: [`database.rules.json`](database.rules.json) (optimized indexes on `voteNumber`, `status`, `prNumber`, etc.)
 - **Project Configuration**: [`firebase.json`](firebase.json) & [`.firebaserc`](.firebaserc)
 - **Zero-Dependency Seeder**: Run `node scripts/seed-firebase.js` to populate/verify all nodes.
@@ -98,8 +97,8 @@ The **SLN Project Platform** is a unified, full-stack enterprise platform develo
 ```
 c:\xampp\htdocs\SP V1\
 ├── index.html               # Main Web App UI (Executive Dashboard, Naval Projects, Special Projects, Labour)
-├── firebase.json            # Firebase CLI Deployment Configuration
-├── .firebaserc              # Firebase Active Project Config (cmsys-projects)
+├── firebase.json            # Firebase CLI Deployment Configuration (cmsys-v2)
+├── .firebaserc              # Firebase Active Project Config (cmsys-v2)
 ├── database.rules.json      # Realtime Database Security & Indexing Rules
 ├── FIREBASE_TOPOLOGY.md     # Cross-System Multi-Firebase Account Directory
 ├── css/
@@ -114,8 +113,8 @@ c:\xampp\htdocs\SP V1\
 │   ├── labour-centre.js     # Labour Centre & Equal Opportunity Rotation Helper
 │   ├── gantt-engine.js      # Advanced Resource Gantt Chart & CPM Solver Engine
 │   ├── qs-boq-engine.js     # Quantity Surveying & EVM Calculation Engine
-│   ├── firebase-sync.js     # Firebase Realtime DB (ce-admin-panel2025) Connector
-│   ├── cloud-sync.js        # Firebase Cloud Operations Sync (cmsys-projects)
+│   ├── firebase-sync.js     # Firebase Realtime DB Connector (cmsys-v2 Personnel & Availability)
+│   ├── cloud-sync.js        # Firebase Cloud Operations Sync (cmsys-v2)
 │   └── cmsys-bridge.js      # CMSys Absorption & Sync Bridge
 ├── api/
 │   ├── config.php           # Database & CORS Configuration

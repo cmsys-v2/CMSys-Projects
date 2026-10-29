@@ -32,6 +32,16 @@
       ".write": true,
       ".indexOn": ["id", "code", "category", "status", "start_date", "end_date"]
     },
+    "projects": {
+      ".read": true,
+      ".write": true,
+      ".indexOn": ["id", "code", "category", "status", "start_date", "end_date"]
+    },
+    "documents": {
+      ".read": true,
+      ".write": true,
+      ".indexOn": ["project_id", "type", "date"]
+    },
     "naval_projects": {
       ".read": true,
       ".write": true,
