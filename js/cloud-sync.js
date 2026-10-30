@@ -213,75 +213,92 @@
     _attachLocalStoreSubscriber() {
       if (!window.spsStore) return;
 
+      this.pendingMutationEvents = new Set();
       window.spsStore.subscribe((event, data) => {
         // Prevent echo if update originated from remote DB
         if (this.isRemoteUpdating || !this.db) return;
 
-        // Debounce syncing full collections on rapid edits
+        if (!this.pendingMutationEvents) this.pendingMutationEvents = new Set();
+        this.pendingMutationEvents.add(event);
+
+        // Debounce syncing full collections on rapid edits without dropping events
         clearTimeout(this.syncDebounceTimer);
         this.syncDebounceTimer = setTimeout(() => {
-          this._handleStoreMutation(event, data);
+          const events = Array.from(this.pendingMutationEvents);
+          this.pendingMutationEvents.clear();
+          this._handleStoreMutations(events);
         }, 300);
       });
     }
 
     async _handleStoreMutation(event) {
-      if (!this.db) return;
+      return this._handleStoreMutations([event]);
+    }
+
+    async _handleStoreMutations(events) {
+      if (!this.db || !events || events.length === 0) return;
+      const eventSet = new Set(events);
 
       try {
+        let touched = false;
+
         // Naval Projects mutation
-        if (['NAVAL_PROJECT_ADDED', 'NAVAL_PROJECT_UPDATED', 'NAVAL_PROJECT_DELETED', 'NAVAL_PROJECTS_SET'].includes(event)) {
+        if (['NAVAL_PROJECT_ADDED', 'NAVAL_PROJECT_UPDATED', 'NAVAL_PROJECT_DELETED', 'NAVAL_PROJECTS_SET'].some(e => eventSet.has(e))) {
           const np = window.spsStore.navalProjects;
           await this.db.ref('naval_projects').set(np);
-          this._touchMeta();
+          touched = true;
         }
 
         // Procurement Files mutation
-        if (['PROCUREMENT_FILE_ADDED', 'PROCUREMENT_FILE_UPDATED', 'PROCUREMENT_FILE_DELETED', 'PROCUREMENT_FILES_SET'].includes(event)) {
+        if (['PROCUREMENT_FILE_ADDED', 'PROCUREMENT_FILE_UPDATED', 'PROCUREMENT_FILE_DELETED', 'PROCUREMENT_FILES_SET'].some(e => eventSet.has(e))) {
           const pf = window.spsStore.procurementFiles;
           await this.db.ref('procurement_files').set(pf);
-          this._touchMeta();
+          touched = true;
         }
 
         // Special Projects mutation
-        if (['PROJECT_ADDED', 'PROJECT_UPDATED', 'PROJECT_DELETED'].includes(event)) {
+        if (['PROJECT_ADDED', 'PROJECT_UPDATED', 'PROJECT_DELETED'].some(e => eventSet.has(e))) {
           const projects = window.spsStore.projects;
           await this.db.ref('special_projects').set(projects);
           await this.db.ref('projects').set(projects); // mirror
-          this._touchMeta();
+          touched = true;
         }
 
         // Attachments mutation
-        if (['ATTACHMENT_ADDED', 'ATTACHMENTS_BULK', 'ATTACHMENT_UPDATED', 'ATTACHMENT_DELETED'].includes(event)) {
+        if (['ATTACHMENT_ADDED', 'ATTACHMENTS_BULK', 'ATTACHMENT_UPDATED', 'ATTACHMENT_DELETED'].some(e => eventSet.has(e))) {
           const attachments = window.spsStore.attachments;
           await this.db.ref('special_project_attachments').set(attachments);
           await this.db.ref('attachments').set(attachments); // mirror
-          this._touchMeta();
+          touched = true;
         }
 
         // Officers mutation
-        if (['USER_ADDED', 'USER_UPDATED', 'USER_DELETED', 'OFFICERS_SET'].includes(event)) {
+        if (['USER_ADDED', 'USER_UPDATED', 'USER_DELETED', 'OFFICERS_SET'].some(e => eventSet.has(e))) {
           const officers = window.spsStore.officers;
           await this.db.ref('officers').set(officers);
           await this.db.ref('user_profiles').set(officers);
-          this._touchMeta();
+          touched = true;
         }
 
-        if (event === 'JOB_CARD_ADDED') {
+        if (eventSet.has('JOB_CARD_ADDED')) {
           const jc = window.spsStore.jobCards;
           await this.db.ref('job_cards').set(jc);
-          this._touchMeta();
+          touched = true;
         }
 
-        if (event === 'DOC_ADDED') {
+        if (eventSet.has('DOC_ADDED')) {
           const docs = window.spsStore.documents;
           await this.db.ref('documents').set(docs);
-          this._touchMeta();
+          touched = true;
         }
 
-        if (event === 'WEATHER_ADDED') {
+        if (eventSet.has('WEATHER_ADDED')) {
           const wl = window.spsStore.weatherLogs;
           await this.db.ref('weather_logs').set(wl);
+          touched = true;
+        }
+
+        if (touched) {
           this._touchMeta();
         }
       } catch (err) {

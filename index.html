@@ -20,161 +20,188 @@
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <!-- Early restore sidebar preference to prevent layout shift -->
+  <script>
+    (function() {
+      try {
+        var collapsed = localStorage.getItem('cmsys_sidebar_collapsed') === 'true';
+        var savedW = localStorage.getItem('cmsys_sidebar_width');
+        if (collapsed) {
+          document.documentElement.classList.add('sidebar-collapsed');
+        } else if (savedW && parseInt(savedW, 10) >= 180) {
+          document.documentElement.style.setProperty('--sidebar-w', savedW + 'px');
+        }
+      } catch(e) {}
+    })();
+  </script>
 </head>
 <body>
 
 <div id="app">
 
   <!-- ═══════════════════════════ SIDEBAR ═══════════════════════════ -->
-  <aside class="sidebar">
+  <aside class="sidebar" id="sidebar">
     <!-- Brand -->
     <div class="sidebar-brand">
-      <img src="assets/img/cmsys-emblem.png" alt="CMSys Emblem" class="brand-emblem-img">
-      <div class="brand-info">
-        <h1 class="brand-title">CMSys Project</h1>
-        <span class="brand-subtitle">SLN DOCKYARD TRINCOMALEE</span>
+      <div class="brand-left">
+        <img src="assets/img/cmsys-emblem.png" alt="CMSys Emblem" class="brand-emblem-img">
+        <div class="brand-info">
+          <h1 class="brand-title">CMSys Project</h1>
+          <span class="brand-subtitle">SLN DOCKYARD TRINCOMALEE</span>
+        </div>
       </div>
+      <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" title="Collapse sidebar (Ctrl+B)" aria-label="Toggle Sidebar">
+        <i class="fas fa-angles-left"></i>
+      </button>
     </div>
 
     <!-- Navigation -->
     <nav class="sidebar-nav">
       <div class="nav-section">Main Windows</div>
 
-      <button class="nav-link active" data-view="dashboard">
+      <button class="nav-link active" data-view="dashboard" data-title="Dashboard">
         <i class="fas fa-tachometer-alt"></i>
-        Dashboard
+        <span class="nav-label">Dashboard</span>
       </button>
 
       <!-- DEDICATED CIVIL PROJECT PROGRESS & MONITORING CENTER -->
-      <button class="nav-link" data-view="progress-center" id="nav-btn-progress-center" style="color:#38bdf8; font-weight:700;">
+      <button class="nav-link" data-view="progress-center" id="nav-btn-progress-center" style="color:#38bdf8; font-weight:700;" data-title="Progress & Monitoring">
         <i class="fas fa-chart-line" style="color:#38bdf8;"></i>
-        Progress & Monitoring
+        <span class="nav-label">Progress & Monitoring</span>
         <span class="nav-badge" id="nb-progress-center" style="background:rgba(56,189,248,0.2); color:#38bdf8; font-weight:800; border:1px solid rgba(56,189,248,0.4);">LIVE</span>
       </button>
 
       <!-- SEPARATE DEDICATED WINDOW FOR NAVAL PROJECTS -->
-      <button class="nav-link" data-view="naval-projects" id="nav-btn-naval" style="color:#38bdf8; font-weight:700;">
+      <button class="nav-link" data-view="naval-projects" id="nav-btn-naval" style="color:#38bdf8; font-weight:700;" data-title="Naval Projects">
         <i class="fas fa-ship" style="color:#38bdf8;"></i>
-        Naval Projects
+        <span class="nav-label">Naval Projects</span>
         <span class="nav-badge" id="nb-naval" style="background:rgba(56,189,248,0.2); color:#38bdf8; font-weight:800; border:1px solid rgba(56,189,248,0.4);">25</span>
       </button>
 
-      <button class="nav-link" data-view="projects">
+      <button class="nav-link" data-view="projects" data-title="Special Projects">
         <i class="fas fa-folder-open"></i>
-        Special Projects
+        <span class="nav-label">Special Projects</span>
         <span class="nav-badge nb-purple" id="nb-special">17</span>
       </button>
 
-      <button class="nav-link" data-view="labour">
+      <button class="nav-link" data-view="labour" data-title="Labour Details">
         <i class="fas fa-users"></i>
-        Labour Details
+        <span class="nav-label">Labour Details</span>
         <span class="nav-badge nb-green" id="nb-labour-total">128</span>
       </button>
 
 
       <div class="nav-section">Naval Votes</div>
 
-      <button class="nav-link" onclick="window.app.navigate('naval-projects'); setTimeout(()=>window.navalProjectsModule.filterVote('2104'), 50);">
+      <button class="nav-link" data-title="Vote 2104 (Major)" onclick="window.app.navigate('naval-projects'); setTimeout(()=>window.navalProjectsModule.filterVote('2104'), 50);">
         <i class="fas fa-hard-hat" style="color:var(--vote-2104, #06b6d4);"></i>
-        Vote 2104 (Major)
+        <span class="nav-label">Vote 2104 (Major)</span>
         <span class="nav-badge" id="nb-vote-2104" style="background:rgba(6,182,212,0.15); color:#06b6d4;">4</span>
       </button>
 
-      <button class="nav-link" onclick="window.app.navigate('naval-projects'); setTimeout(()=>window.navalProjectsModule.filterVote('2001'), 50);">
+      <button class="nav-link" data-title="Vote 2001 (Renovation)" onclick="window.app.navigate('naval-projects'); setTimeout(()=>window.navalProjectsModule.filterVote('2001'), 50);">
         <i class="fas fa-tools" style="color:var(--vote-2001, #f59e0b);"></i>
-        Vote 2001 (Renovation)
+        <span class="nav-label">Vote 2001 (Renovation)</span>
         <span class="nav-badge" id="nb-vote-2001" style="background:rgba(245,158,11,0.15); color:#f59e0b;">10</span>
       </button>
 
-      <button class="nav-link" onclick="window.app.navigate('naval-projects'); setTimeout(()=>window.navalProjectsModule.filterVote('2506'), 50);">
+      <button class="nav-link" data-title="Vote 2506 (Pier & Coastal)" onclick="window.app.navigate('naval-projects'); setTimeout(()=>window.navalProjectsModule.filterVote('2506'), 50);">
         <i class="fas fa-anchor" style="color:var(--vote-2506, #10b981);"></i>
-        Vote 2506 (Pier & Coastal)
+        <span class="nav-label">Vote 2506 (Pier & Coastal)</span>
         <span class="nav-badge" id="nb-vote-2506" style="background:rgba(16,185,129,0.15); color:#10b981;">6</span>
       </button>
 
-      <button class="nav-link" onclick="window.app.navigate('naval-projects'); setTimeout(()=>window.navalProjectsModule.filterVote('1303'), 50);">
+      <button class="nav-link" data-title="Vote 1303 (Maintenance)" onclick="window.app.navigate('naval-projects'); setTimeout(()=>window.navalProjectsModule.filterVote('1303'), 50);">
         <i class="fas fa-wrench" style="color:var(--vote-1303, #8b5cf6);"></i>
-        Vote 1303 (Maintenance)
+        <span class="nav-label">Vote 1303 (Maintenance)</span>
         <span class="nav-badge" id="nb-vote-1303" style="background:rgba(139,92,246,0.15); color:#8b5cf6;">2</span>
       </button>
 
-      <button class="nav-link" onclick="window.app.navigate('naval-projects'); setTimeout(()=>window.navalProjectsModule.filterVote('Non-Naval'), 50);">
+      <button class="nav-link" data-title="Non-Naval / Funds" onclick="window.app.navigate('naval-projects'); setTimeout(()=>window.navalProjectsModule.filterVote('Non-Naval'), 50);">
         <i class="fas fa-handshake" style="color:var(--vote-non, #ec4899);"></i>
-        Non-Naval / Funds
+        <span class="nav-label">Non-Naval / Funds</span>
         <span class="nav-badge" id="nb-vote-non" style="background:rgba(236,72,153,0.15); color:#ec4899;">2</span>
       </button>
 
-      <button class="nav-link" onclick="window.app.navigate('naval-projects'); setTimeout(()=>window.navalProjectsModule.filterVote('2103'), 50);">
+      <button class="nav-link" data-title="Vote 2103 (Machinery)" onclick="window.app.navigate('naval-projects'); setTimeout(()=>window.navalProjectsModule.filterVote('2103'), 50);">
         <i class="fas fa-cogs" style="color:var(--vote-2103, #3b82f6);"></i>
-        Vote 2103 (Machinery)
+        <span class="nav-label">Vote 2103 (Machinery)</span>
         <span class="nav-badge" id="nb-vote-2103" style="background:rgba(59,130,246,0.15); color:#3b82f6;">1</span>
       </button>
 
       <div class="nav-section">Special Categories</div>
 
-      <button class="nav-link" onclick="window.app.navigate('dashboard');setTimeout(()=>window.app.filterCategory('Religious'),100)">
+      <button class="nav-link" data-title="Religious" onclick="window.app.navigate('dashboard');setTimeout(()=>window.app.filterCategory('Religious'),100)">
         <i class="fas fa-place-of-worship" style="color:var(--religious);"></i>
-        Religious
+        <span class="nav-label">Religious</span>
         <span class="nav-badge nb-gold" id="nb-religious">0</span>
       </button>
 
-      <button class="nav-link" onclick="window.app.navigate('dashboard');setTimeout(()=>window.app.filterCategory('Clean Sri Lanka'),100)">
+      <button class="nav-link" data-title="Clean Sri Lanka" onclick="window.app.navigate('dashboard');setTimeout(()=>window.app.filterCategory('Clean Sri Lanka'),100)">
         <i class="fas fa-leaf" style="color:var(--csl);"></i>
-        Clean Sri Lanka
+        <span class="nav-label">Clean Sri Lanka</span>
         <span class="nav-badge nb-green" id="nb-cleansrilanka">0</span>
       </button>
 
-      <button class="nav-link" onclick="window.app.navigate('dashboard');setTimeout(()=>window.app.filterCategory('Housing'),100)">
+      <button class="nav-link" data-title="Housing" onclick="window.app.navigate('dashboard');setTimeout(()=>window.app.filterCategory('Housing'),100)">
         <i class="fas fa-home" style="color:var(--housing);"></i>
-        Housing
+        <span class="nav-label">Housing</span>
         <span class="nav-badge nb-blue" id="nb-housing">0</span>
       </button>
 
-      <button class="nav-link" onclick="window.app.navigate('dashboard');setTimeout(()=>window.app.filterCategory('Miscellaneous'),100)">
+      <button class="nav-link" data-title="Miscellaneous" onclick="window.app.navigate('dashboard');setTimeout(()=>window.app.filterCategory('Miscellaneous'),100)">
         <i class="fas fa-folder" style="color:var(--misc);"></i>
-        Miscellaneous
+        <span class="nav-label">Miscellaneous</span>
         <span class="nav-badge nb-purple" id="nb-miscellaneous">0</span>
       </button>
 
       <div class="nav-section">Administration</div>
 
       <!-- Settings View (Officers Profiles & System Admin) -->
-      <button class="nav-link" data-view="settings" id="nav-btn-settings">
+      <button class="nav-link" data-view="settings" id="nav-btn-settings" data-title="Settings & Officers Profiles">
         <i class="fas fa-cog"></i>
-        Settings
+        <span class="nav-label">Settings</span>
         <span class="nav-badge nb-gold" id="nb-settings-officers" title="12 Commissioned Officers Profiles">12</span>
       </button>
     </nav>
 
     <!-- Dual Firebase Topology Status -->
     <div class="sidebar-footer">
-      <div class="fb-status" style="margin-bottom: 8px;">
+      <div class="fb-status" title="SAILOR DB: cmsys-v2 (sailors) READ-ONLY" style="margin-bottom: 8px;">
         <div class="fb-status-row">
-          <span style="font-size:0.72rem;color:var(--text-dim);font-weight:600;"><i class="fas fa-user-shield" style="font-size:0.7rem;"></i> SAILOR DB</span>
+          <span style="font-size:0.72rem;color:var(--text-dim);font-weight:600;"><i class="fas fa-user-shield" style="font-size:0.7rem;"></i> <span class="fb-status-label">SAILOR DB</span></span>
           <span id="fb-status-text" style="font-size:0.75rem;">
             <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--warning);margin-right:4px;"></span>
             Connecting...
           </span>
         </div>
-        <div style="font-size:0.65rem;color:var(--text-dim);display:flex;justify-content:space-between;">
+        <div class="fb-status-details" style="font-size:0.65rem;color:var(--text-dim);display:flex;justify-content:space-between;">
           <span>cmsys-v2 (sailors)</span>
           <span style="color:var(--accent);font-weight:600;">READ-ONLY</span>
         </div>
       </div>
-      <div class="fb-status">
+      <div class="fb-status" title="CLOUD OPS: cmsys-v2 (projects) READ-WRITE">
         <div class="fb-status-row">
-          <span style="font-size:0.72rem;color:var(--text-dim);font-weight:600;"><i class="fas fa-cloud-arrow-up" style="font-size:0.7rem;"></i> CLOUD OPS</span>
+          <span style="font-size:0.72rem;color:var(--text-dim);font-weight:600;"><i class="fas fa-cloud-arrow-up" style="font-size:0.7rem;"></i> <span class="fb-status-label">CLOUD OPS</span></span>
           <span id="cloud-status-text" style="font-size:0.75rem;">
             <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--warning);margin-right:4px;"></span>
             Connecting...
           </span>
         </div>
-        <div style="font-size:0.65rem;color:var(--text-dim);display:flex;justify-content:space-between;">
+        <div class="fb-status-details" style="font-size:0.65rem;color:var(--text-dim);display:flex;justify-content:space-between;">
           <span>cmsys-v2 (projects)</span>
           <span style="color:#10b981;font-weight:600;">READ-WRITE</span>
         </div>
       </div>
     </div>
+
+    <!-- Edge Resizer Handle (Drag to shrink or expand • Double-click to toggle) -->
+    <div class="sidebar-resizer" id="sidebar-resizer" title="Drag to shrink / resize sidebar • Double-click to collapse/expand"></div>
+
+    <!-- Floating Edge Chevron Collapse Button -->
+    <button class="sidebar-collapse-edge-btn" id="sidebar-collapse-edge-btn" title="Toggle Sidebar (Ctrl+B)" aria-label="Toggle Sidebar">
+      <i class="fas fa-chevron-left"></i>
+    </button>
   </aside>
 
   <!-- ═══════════════════════════ MAIN CONTENT ═══════════════════════════ -->
@@ -183,6 +210,9 @@
     <!-- Top Bar Header with Official CMSys Project Banner -->
     <header class="topbar">
       <div class="topbar-left">
+        <button class="topbar-sidebar-toggle" id="topbar-sidebar-toggle" title="Toggle Sidebar (Ctrl+B)" aria-label="Toggle Sidebar">
+          <i class="fas fa-bars"></i>
+        </button>
         <div class="system-banner">
           <img src="assets/img/cmsys-banner-logo.png" alt="CMSys SLN Dockyard Trincomalee" class="system-banner-img">
           <div class="banner-divider"></div>
@@ -408,6 +438,9 @@
 <div class="modal-overlay" id="sailor-lightbox-modal-overlay" onclick="if(event.target===this)window.labourCentre.closeLightbox()">
   <!-- Rendered dynamically by labour-centre.js openLightbox() -->
 </div>
+
+<!-- Progress Center Modal (Subproject inspection, Add/Edit Subproject) -->
+<div class="modal-overlay pc-modal-overlay" id="pc-modal-overlay" onclick="if(event.target===this)this.classList.remove('open')"></div>
 
 <!-- Toast Notifications -->
 <div id="toasts"></div>

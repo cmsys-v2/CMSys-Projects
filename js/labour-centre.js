@@ -366,8 +366,16 @@
       this._renderSailorList();
     }
 
-    filterSailors() {
-      this._renderSailorList();
+    filterSailors(immediate = false) {
+      if (immediate) {
+        clearTimeout(this._sailorSearchDebounce);
+        this._renderSailorList();
+        return;
+      }
+      clearTimeout(this._sailorSearchDebounce);
+      this._sailorSearchDebounce = setTimeout(() => {
+        this._renderSailorList();
+      }, 150);
     }
 
     selectSailor(officialNumber) {
@@ -440,27 +448,41 @@
 
         if (info.type === 'vout') {
           cellCls.push('day-vout');
-          const pTitle = info.details?.project_title || 'Out Project';
+          let pTitle = info.details?.project_title;
+          const pId = info.details?.project_id || '';
+          if ((!pTitle || pTitle === pId) && pId) {
+            const p = window.spsStore.getProject(pId) || (window.spsStore.getNavalProject && window.spsStore.getNavalProject(pId));
+            if (p) pTitle = p.title || p.projectName || p.name;
+          }
+          if (!pTitle) pTitle = 'Out Project';
+
           badgesHtml = `
             <div class="cal-day-badges">
-              <span class="cbadge cbadge-vout" title="Victualing Out (V/Out): ${this.escapeHtml(pTitle)}">
+              <span class="cbadge cbadge-vout" title="Victualing Out (V/Out): ${this.escapeHtml(pTitle)}${pId ? ' (' + this.escapeHtml(pId) + ')' : ''}">
                 <i class="fas fa-utensils"></i> V/Out
               </span>
-              <span style="font-size:0.58rem; color:#f59e0b; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${this.escapeHtml(pTitle)}">
-                ${this.escapeHtml(info.details?.project_id || 'OUT')}
+              <span class="cal-day-proj proj-vout" style="font-size:0.58rem; color:#f59e0b; font-weight:700; line-height:1.15; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; word-break:break-word;" title="${this.escapeHtml(pTitle)}${pId ? ' (' + this.escapeHtml(pId) + ')' : ''}">
+                ${this.escapeHtml(pTitle)}
               </span>
             </div>
           `;
         } else if (info.type === 'vin') {
           cellCls.push('day-vin');
-          const pTitle = info.details?.project_title || 'Naval Duty';
+          let pTitle = info.details?.project_title;
+          const pId = info.details?.project_id || '';
+          if ((!pTitle || pTitle === pId) && pId) {
+            const p = window.spsStore.getProject(pId) || (window.spsStore.getNavalProject && window.spsStore.getNavalProject(pId));
+            if (p) pTitle = p.title || p.projectName || p.name;
+          }
+          if (!pTitle) pTitle = 'Naval Duty';
+
           badgesHtml = `
             <div class="cal-day-badges">
-              <span class="cbadge cbadge-vin" title="Victualing In: ${this.escapeHtml(pTitle)}">
+              <span class="cbadge cbadge-vin" title="Victualing In: ${this.escapeHtml(pTitle)}${pId ? ' (' + this.escapeHtml(pId) + ')' : ''}">
                 <i class="fas fa-anchor"></i> V/In
               </span>
-              <span style="font-size:0.58rem; color:#38bdf8; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${this.escapeHtml(pTitle)}">
-                ${this.escapeHtml(info.details?.project_id || 'PROJ')}
+              <span class="cal-day-proj proj-vin" style="font-size:0.58rem; color:#38bdf8; font-weight:700; line-height:1.15; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; word-break:break-word;" title="${this.escapeHtml(pTitle)}${pId ? ' (' + this.escapeHtml(pId) + ')' : ''}">
+                ${this.escapeHtml(pTitle)}
               </span>
             </div>
           `;
@@ -835,9 +857,17 @@
       this.renderTable();
     }
 
-    setTableSearch(val) {
+    setTableSearch(val, immediate = false) {
       this._tableSearch = val;
-      this.renderTable();
+      if (immediate) {
+        clearTimeout(this._tableSearchDebounce);
+        this.renderTable();
+        return;
+      }
+      clearTimeout(this._tableSearchDebounce);
+      this._tableSearchDebounce = setTimeout(() => {
+        this.renderTable();
+      }, 150);
     }
 
     setTableTrade(val) {

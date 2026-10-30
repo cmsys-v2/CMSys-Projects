@@ -69,8 +69,8 @@
 
       // Get daily totals
       const dailyTotals = window.spsStore.getDailyTotals(
-        startD.toISOString().split('T')[0],
-        endD.toISOString().split('T')[0]
+        this._toLocalDateStr(startD),
+        this._toLocalDateStr(endD)
       );
       const maxDailyTotal = Math.max(1, ...Object.values(dailyTotals));
 
@@ -182,11 +182,19 @@
       return html;
     }
 
+    _toLocalDateStr(d) {
+      if (!d || isNaN(d.getTime())) return '';
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
     _buildTotalCells(startD, totalDays, dailyTotals, maxDailyTotal) {
       let html = '';
       let cur  = new Date(startD);
       for (let i = 0; i < totalDays; i++) {
-        const key   = cur.toISOString().split('T')[0];
+        const key   = this._toLocalDateStr(cur);
         const val   = dailyTotals[key] || 0;
         const pct   = maxDailyTotal > 0 ? (val / maxDailyTotal) * 100 : 0;
         const cls   = pct > 80 ? 'high-load' : pct > 50 ? 'med-load' : '';

@@ -27,6 +27,7 @@
         await this._loadSampleData();
       }
 
+      this._initSidebarControls();
       this._bindNavigation();
       this._bindGlobalSearch();
       this._renderRoleSwitcher();
@@ -112,6 +113,259 @@
       } catch(e) { console.warn('Sample data load failed:', e); }
     }
 
+    // ── Collapsible & Resizable Sidebar Navigation Controller ──
+    _initSidebarControls() {
+      const sidebar = document.getElementById('sidebar');
+      if (!sidebar) return;
+
+      const toggleBtn = document.getElementById('sidebar-toggle-btn');
+      const edgeBtn = document.getElementById('sidebar-collapse-edge-btn');
+      const topbarBtn = document.getElementById('topbar-sidebar-toggle');
+      const resizer = document.getElementById('sidebar-resizer');
+
+      // Restore saved preference
+      const isCollapsed = localStorage.getItem('cmsys_sidebar_collapsed') === 'true';
+      const savedWidth = parseInt(localStorage.getItem('cmsys_sidebar_width'), 10);
+
+      if (isCollapsed) {
+        sidebar.classList.add('is-collapsed');
+        document.documentElement.classList.add('sidebar-collapsed');
+        if (toggleBtn) {
+          toggleBtn.title = 'Expand sidebar (Ctrl+B)';
+          const icon = toggleBtn.querySelector('i');
+          if (icon) icon.className = 'fas fa-angles-right';
+        }
+        if (edgeBtn) edgeBtn.title = 'Expand sidebar (Ctrl+B)';
+      } else if (savedWidth && savedWidth >= 180 && savedWidth <= 450) {
+        document.documentElement.style.setProperty('--sidebar-w', `${savedWidth}px`);
+      }
+
+      // Master Toggle Function
+      const toggle = () => {
+        // Mobile drawer handling
+        if (window.innerWidth <= 900) {
+          sidebar.classList.toggle('mobile-open');
+          return;
+        }
+
+        const currentlyCollapsed = sidebar.classList.contains('is-collapsed');
+        const newState = !currentlyCollapsed;
+
+        sidebar.classList.toggle('is-collapsed', newState);
+        document.documentElement.classList.toggle('sidebar-collapsed', newState);
+        localStorage.setItem('cmsys_sidebar_collapsed', newState ? 'true' : 'false');
+
+        if (toggleBtn) {
+          toggleBtn.title = newState ? 'Expand sidebar (Ctrl+B)' : 'Collapse sidebar (Ctrl+B)';
+          const icon = toggleBtn.querySelector('i');
+          if (icon) icon.className = newState ? 'fas fa-angles-right' : 'fas fa-angles-left';
+        }
+        if (edgeBtn) {
+          edgeBtn.title = newState ? 'Expand sidebar (Ctrl+B)' : 'Collapse sidebar (Ctrl+B)';
+        }
+
+        // Notify charts, Gantt canvas & tables to adapt to the wider window span
+        setTimeout(() => {
+          window.dispatchEvent(new Event('resize'));
+        }, 270);
+      };
+
+      this.toggleSidebar = toggle;
+
+      if (toggleBtn) toggleBtn.addEventListener('click', toggle);
+      if (edgeBtn) edgeBtn.addEventListener('click', toggle);
+      if (topbarBtn) topbarBtn.addEventListener('click', toggle);
+
+      // Keyboard shortcut: Ctrl+B or Cmd+B
+      window.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'b' || e.key === 'B')) {
+          e.preventDefault();
+          toggle();
+        }
+      });
+
+      // Close mobile drawer when clicking outside
+      document.addEventListener('click', (e) => {
+        if (window.innerWidth <= 900 && sidebar.classList.contains('mobile-open')) {
+          if (!sidebar.contains(e.target) && !topbarBtn?.contains(e.target)) {
+            sidebar.classList.remove('mobile-open');
+          }
+        }
+      });
+
+      // Draggable Splitter Handle (Free Drag to Shrink or Expand)
+      if (resizer) {
+        let isDragging = false;
+        let startX = 0;
+        let startW = 265;
+
+        const onMouseDown = (e) => {
+          if (window.innerWidth <= 900) return;
+          isDragging = true;
+          startX = e.clientX;
+          startW = sidebar.getBoundingClientRect().width;
+          sidebar.classList.add('is-resizing');
+          document.body.classList.add('is-resizing-sidebar');
+          resizer.classList.add('is-dragging');
+          document.addEventListener('mousemove', onMouseMove);
+          document.addEventListener('mouseup', onMouseUp);
+          e.preventDefault();
+        };
+
+        const onMouseMove = (e) => {
+          if (!isDragging) return;
+          const delta = e.clientX - startX;
+          let newW = Math.round(startW + delta);
+
+          // Auto-snap threshold
+          if (newW < 145) {
+            if (!sidebar.classList.contains('is-collapsed')) {
+              sidebar.classList.add('is-collapsed');
+              document.documentElement.classList.add('sidebar-collapsed');
+              if (toggleBtn) {
+                const icon = toggleBtn.querySelector('i');
+                if (icon) icon.className = 'fas fa-angles-right';
+              }
+            }
+          } else {
+            if (sidebar.classList.contains('is-collapsed')) {
+              sidebar.classList.remove('is-collapsed');
+              document.documentElement.classList.remove('sidebar-collapsed');
+              if (toggleBtn) {
+                const icon = toggleBtn.querySelector('i');
+                if (icon) icon.className = 'fas fa-angles-left';
+              }
+            }
+            newW = Math.max(180, Math.min(420, newW));
+            document.documentElement.style.setProperty('--sidebar-w', `${newW}px`);
+          }
+        };
+
+        const onMouseUp = () => {
+          if (!isDragging) return;
+          isDragging = false;
+          sidebar.classList.remove('is-resizing');
+          document.body.classList.remove('is-resizing-sidebar');
+          resizer.classList.remove('is-dragging');
+          document.removeEventListener('mousemove', onMouseMove);
+          document.removeEventListener('mouseup', onMouseUp);
+
+          const collapsed = sidebar.classList.contains('is-collapsed');
+          localStorage.setItem('cmsys_sidebar_collapsed', collapsed ? 'true' : 'false');
+          if (!collapsed) {
+            const curW = Math.round(sidebar.getBoundingClientRect().width);
+            if (curW >= 180 && curW <= 420) {
+              localStorage.setItem('cmsys_sidebar_width', curW.toString());
+            }
+          }
+          window.dispatchEvent(new Event('resize'));
+        };
+
+        resizer.addEventListener('mousedown', onMouseDown);
+        // Double-click toggle
+        resizer.addEventListener('dblclick', toggle);
+
+        // Fluid touch-drag support for tablet and touchscreen devices
+        const onTouchStart = (e) => {
+          if (window.innerWidth <= 900) return;
+          const touch = e.touches[0];
+          if (!touch) return;
+          isDragging = true;
+          startX = touch.clientX;
+          startW = sidebar.getBoundingClientRect().width;
+          sidebar.classList.add('is-resizing');
+          document.body.classList.add('is-resizing-sidebar');
+          resizer.classList.add('is-dragging');
+          document.addEventListener('touchmove', onTouchMove, { passive: false });
+          document.addEventListener('touchend', onTouchEnd);
+          document.addEventListener('touchcancel', onTouchEnd);
+        };
+
+        const onTouchMove = (e) => {
+          if (!isDragging) return;
+          const touch = e.touches[0];
+          if (!touch) return;
+          e.preventDefault();
+          const delta = touch.clientX - startX;
+          let newW = Math.round(startW + delta);
+          if (newW < 145) {
+            if (!sidebar.classList.contains('is-collapsed')) {
+              sidebar.classList.add('is-collapsed');
+              document.documentElement.classList.add('sidebar-collapsed');
+              if (toggleBtn) {
+                const icon = toggleBtn.querySelector('i');
+                if (icon) icon.className = 'fas fa-angles-right';
+              }
+            }
+          } else {
+            if (sidebar.classList.contains('is-collapsed')) {
+              sidebar.classList.remove('is-collapsed');
+              document.documentElement.classList.remove('sidebar-collapsed');
+              if (toggleBtn) {
+                const icon = toggleBtn.querySelector('i');
+                if (icon) icon.className = 'fas fa-angles-left';
+              }
+            }
+            newW = Math.max(180, Math.min(420, newW));
+            document.documentElement.style.setProperty('--sidebar-w', `${newW}px`);
+          }
+        };
+
+        const onTouchEnd = () => {
+          document.removeEventListener('touchmove', onTouchMove);
+          document.removeEventListener('touchend', onTouchEnd);
+          document.removeEventListener('touchcancel', onTouchEnd);
+          onMouseUp();
+        };
+
+        resizer.addEventListener('touchstart', onTouchStart, { passive: true });
+      }
+
+      // Initialize rich hover flyouts in collapsed mode
+      this._initSidebarFlyoutTooltip();
+    }
+
+    _initSidebarFlyoutTooltip() {
+      let tooltip = document.getElementById('sidebar-flyout-tooltip');
+      if (!tooltip) {
+        tooltip = document.createElement('div');
+        tooltip.id = 'sidebar-flyout-tooltip';
+        tooltip.className = 'sidebar-flyout-tooltip';
+        document.body.appendChild(tooltip);
+      }
+
+      const sidebar = document.getElementById('sidebar');
+      if (!sidebar) return;
+
+      const links = sidebar.querySelectorAll('.nav-link');
+      links.forEach(link => {
+        link.addEventListener('mouseenter', () => {
+          if (!sidebar.classList.contains('is-collapsed')) return;
+          const title = link.getAttribute('data-title') || link.querySelector('.nav-label')?.textContent?.trim() || '';
+          const badge = link.querySelector('.nav-badge');
+          const badgeText = badge && badge.textContent?.trim() ? badge.textContent.trim() : '';
+
+          if (!title) return;
+
+          const rect = link.getBoundingClientRect();
+          let html = `<span>${title}</span>`;
+          if (badgeText) {
+            const badgeBg = badge.style.backgroundColor || 'rgba(56,189,248,0.2)';
+            const badgeColor = badge.style.color || '#38bdf8';
+            html += `<span class="tooltip-badge" style="background:${badgeBg};color:${badgeColor}">${badgeText}</span>`;
+          }
+          tooltip.innerHTML = html;
+          tooltip.style.top = `${rect.top + rect.height / 2 - 16}px`;
+          tooltip.style.left = `${rect.right + 10}px`;
+          tooltip.classList.add('is-visible');
+        });
+
+        link.addEventListener('mouseleave', () => {
+          tooltip.classList.remove('is-visible');
+        });
+      });
+    }
+
     // ── Navigation ──
     _bindNavigation() {
       document.querySelectorAll('.nav-link[data-view]').forEach(link => {
@@ -123,6 +377,15 @@
       if (view === 'officers') {
         this._settingsTab = 'officers';
         return this.navigate('settings');
+      }
+
+      if (this._searchDebounceTimer) {
+        clearTimeout(this._searchDebounceTimer);
+        this._searchDebounceTimer = null;
+      }
+      const sInp = document.getElementById('global-search');
+      if (sInp && sInp.value) {
+        sInp.value = '';
       }
 
       this._currentView = view;
@@ -266,16 +529,18 @@
           <p>No projects found. Add a new special project to get started.</p>
         </div>`;
       } else {
-        active.forEach(p => { html += this._projectCard(p); });
+        const todayStr = new Date().toISOString().split('T')[0];
+        const headcountMap = window.spsStore.getHeadcountByDate ? window.spsStore.getHeadcountByDate(todayStr) : {};
+        active.forEach(p => { html += this._projectCard(p, false, headcountMap[p.id]); });
         if (completed.length > 0) {
           html += `<div class="inactive-banner" style="grid-column:1/-1;"><i class="fas fa-check-circle"></i> Completed Projects (${completed.length})</div>`;
-          completed.forEach(p => { html += this._projectCard(p, true); });
+          completed.forEach(p => { html += this._projectCard(p, true, headcountMap[p.id]); });
         }
       }
       grid.innerHTML = html;
     }
 
-    _projectCard(p, isCompleted = false) {
+    _projectCard(p, isCompleted = false, precomputedLabour = null) {
       const catCls  = CAT_CLASS[p.category]  || 'misc';
       const catIcon = CAT_ICONS[p.category] || 'fa-folder';
       const statusCls = p.status === 'Active' ? 'status-active' : p.status === 'On Hold' ? 'status-hold' : 'status-completed';
@@ -290,16 +555,18 @@
         `<span class="trade-chip">${t}: <span>${c}</span></span>`).join('');
 
       const today = new Date(); today.setHours(0,0,0,0);
-      const labourNow = window.spsStore.attachments.filter(a => {
+      const labourNow = precomputedLabour !== undefined && precomputedLabour !== null ? precomputedLabour : window.spsStore.attachments.filter(a => {
         if (a.project_id !== p.id) return false;
         const f = new Date(a.from_date); f.setHours(0,0,0,0);
         const e = new Date(a.to_date);   e.setHours(0,0,0,0);
         return today >= f && today <= e;
       }).length;
 
-      const daysLeft = Math.ceil((new Date(p.end_date) - today) / 86400000);
-      const daysStr  = daysLeft < 0 ? 'OVERDUE' : daysLeft + ' days left';
-      const daysColor = daysLeft < 0 ? 'var(--danger)' : daysLeft < 14 ? 'var(--warning)' : 'var(--text-muted)';
+      const endD = p.end_date ? new Date(p.end_date) : null;
+      const isValidEnd = endD && !isNaN(endD.getTime());
+      const daysLeft = isValidEnd ? Math.ceil((endD - today) / 86400000) : null;
+      const daysStr  = daysLeft === null ? 'Ongoing' : (daysLeft < 0 ? 'OVERDUE' : daysLeft + ' days left');
+      const daysColor = daysLeft === null ? 'var(--accent)' : (daysLeft < 0 ? 'var(--danger)' : daysLeft < 14 ? 'var(--warning)' : 'var(--text-muted)');
 
       const matCls = p.material_status === 'OK' ? 'mat-ok' : p.material_status === 'Low' ? 'mat-low' : 'mat-critical';
 
@@ -360,12 +627,21 @@
     }
 
     // ── Projects View ──
-    renderProjectsView() {
+    renderProjectsView(filterQuery = '') {
       const container = document.getElementById('projects-full-list');
       if (!container) return;
-      const projects = window.spsStore.projects;
+      let projects = window.spsStore.projects;
+      const q = (typeof filterQuery === 'string' && filterQuery ? filterQuery : (document.getElementById('global-search')?.value || '')).toLowerCase().trim();
+      if (q) {
+        projects = projects.filter(p =>
+          (p.title && p.title.toLowerCase().includes(q)) ||
+          (p.code && p.code.toLowerCase().includes(q)) ||
+          (p.location && p.location.toLowerCase().includes(q)) ||
+          (p.category && p.category.toLowerCase().includes(q))
+        );
+      }
       if (projects.length === 0) {
-        container.innerHTML = `<div class="empty-state"><i class="fas fa-folder-open"></i><p>No projects yet.</p></div>`;
+        container.innerHTML = `<div class="empty-state"><i class="fas fa-folder-open"></i><p>${q ? `No projects matching "${q}"` : 'No projects yet.'}</p></div>`;
         return;
       }
       container.innerHTML = `<table class="sps-table">
@@ -1247,15 +1523,43 @@
       const inp = document.getElementById('global-search');
       if (!inp) return;
       inp.addEventListener('input', () => {
-        const q = inp.value.toLowerCase();
-        if (!q) { this.renderDashboard(); return; }
-        const matches = window.spsStore.projects.filter(p =>
-          p.title.toLowerCase().includes(q) || p.code.toLowerCase().includes(q) ||
-          p.location.toLowerCase().includes(q) || p.category.toLowerCase().includes(q));
-        const grid = document.getElementById('projects-grid');
-        if (grid) grid.innerHTML = matches.length === 0
-          ? `<div class="empty-state" style="grid-column:1/-1;"><i class="fas fa-search"></i><p>No projects matching "${q}"</p></div>`
-          : matches.map(p => this._projectCard(p)).join('');
+        clearTimeout(this._searchDebounceTimer);
+        this._searchDebounceTimer = setTimeout(() => {
+          const rawQ = inp.value || '';
+          const q = rawQ.toLowerCase().trim();
+
+          // Context-aware search dispatch depending on current active view
+          if (this._currentView === 'naval-projects' && window.navalProjectsModule) {
+            window.navalProjectsModule.handleSearch(rawQ, true);
+            return;
+          }
+          if (this._currentView === 'labour' && window.labourCentre) {
+            if (window.labourCentre._viewMode === 'table') {
+              window.labourCentre.setTableSearch(rawQ, true);
+            } else {
+              const sInput = document.getElementById('sailor-search');
+              if (sInput) sInput.value = rawQ;
+              window.labourCentre.filterSailors(true);
+            }
+            return;
+          }
+          if (this._currentView === 'projects') {
+            this.renderProjectsView(rawQ);
+            return;
+          }
+
+          // Default: Dashboard projects search
+          if (!q) { this.renderDashboard(); return; }
+          const matches = window.spsStore.projects.filter(p =>
+            (p.title && p.title.toLowerCase().includes(q)) || 
+            (p.code && p.code.toLowerCase().includes(q)) ||
+            (p.location && p.location.toLowerCase().includes(q)) || 
+            (p.category && p.category.toLowerCase().includes(q)));
+          const grid = document.getElementById('projects-grid');
+          if (grid) grid.innerHTML = matches.length === 0
+            ? `<div class="empty-state" style="grid-column:1/-1;"><i class="fas fa-search"></i><p>No projects matching "${rawQ}"</p></div>`
+            : matches.map(p => this._projectCard(p)).join('');
+        }, 150);
       });
     }
 

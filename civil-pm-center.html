@@ -465,7 +465,8 @@
     .g-bar-progress { fill: #38bdf8; }
     .g-bar-critical { fill: #ef4444; filter: drop-shadow(0 0 6px rgba(239,68,68,0.6)); }
     .g-baseline   { fill: none; stroke: #64748b; stroke-width: 2; stroke-dasharray: 4,3; }
-    .g-dep-arrow  { fill: none; stroke: #f59e0b; stroke-width: 1.5; marker-end: url(#arrow); }
+    .g-dep-arrow  { fill: none; stroke: #f59e0b; stroke-width: 1.5; marker-end: url(#arrow); transition: stroke 0.2s, stroke-width 0.2s; }
+    .g-dep-arrow.is-critical { stroke: #ef4444; stroke-width: 2.2; marker-end: url(#arrow-critical); filter: drop-shadow(0 0 4px rgba(239,68,68,0.7)); }
     .g-float-badge { fill: #1a2540; rx: 3; ry: 3; }
     .g-label      { fill: #e2e8f0; font-family: 'Inter', sans-serif; font-size: 11px; }
     .g-label-code { fill: #38bdf8; font-family: 'JetBrains Mono', monospace; font-size: 9px; }
@@ -892,6 +893,11 @@
           <button class="btn btn-outline" id="zoomDay"   onclick="CivilPM.s4.setZoom('day')">Day</button>
           <button class="btn btn-primary" id="zoomWeek"  onclick="CivilPM.s4.setZoom('week')">Week</button>
           <button class="btn btn-outline" id="zoomMonth" onclick="CivilPM.s4.setZoom('month')">Month</button>
+          <div class="nav-sep"></div>
+          <span style="font-size:11px;color:var(--text-secondary);">LINKS:</span>
+          <button class="btn btn-primary" id="lineTypeOrthogonal" onclick="CivilPM.s4.setLineType('orthogonal')" title="Stepped 90° Manhattan"><i class="fas fa-turn-down"></i> Stepped</button>
+          <button class="btn btn-outline" id="lineTypeCurved" onclick="CivilPM.s4.setLineType('curved')" title="Smooth Bezier S-Curve"><i class="fas fa-wave-square"></i> Curved</button>
+          <button class="btn btn-outline" id="lineTypeStraight" onclick="CivilPM.s4.setLineType('straight')" title="Direct Vector"><i class="fas fa-arrow-right-long"></i> Direct</button>
           <div class="nav-sep"></div>
           <button class="btn btn-outline" onclick="CivilPM.s4.scrollToToday()"><i class="fas fa-calendar-day"></i> Today</button>
           <button class="btn btn-outline" onclick="CivilPM.s4.recalcCPM()"><i class="fas fa-calculator"></i> CPM Recalc</button>
@@ -3212,18 +3218,32 @@ const GanttRenderer = (() => {
 
   const dayX = (d) => Utils.daysBetween(ganttStart, d) * pxPerDay - scrollX;
 
-  const drawArrow = (svg, fx, fy, tx, ty, label) => {
+  let currentLineType = 'orthogonal'; // 'orthogonal' | 'curved' | 'straight'
+
+  const drawArrow = (svg, fx, fy, tx, ty, label, isCritical) => {
     const path = document.createElementNS('http://www.w3.org/2000/svg','path');
-    const midX = fx + Math.max(16, (tx - fx) / 2);
-    path.setAttribute('d',`M${fx},${fy} L${midX},${fy} L${midX},${ty} L${tx},${ty}`);
-    path.setAttribute('class','g-dep-arrow');
+    let d = '';
+
+    if (currentLineType === 'straight') {
+      d = `M${fx},${fy} L${tx},${ty}`;
+    } else if (currentLineType === 'curved') {
+      const dx = Math.max(24, Math.abs(tx - fx) * 0.45);
+      d = `M${fx},${fy} C${fx + dx},${fy} ${tx - dx},${ty} ${tx},${ty}`;
+    } else { // orthogonal (stepped Manhattan)
+      const midX = fx + Math.max(16, (tx - fx) / 2);
+      d = `M${fx},${fy} L${midX},${fy} L${midX},${ty} L${tx},${ty}`;
+    }
+
+    path.setAttribute('d', d);
+    path.setAttribute('class', isCritical ? 'g-dep-arrow is-critical' : 'g-dep-arrow');
     svg.appendChild(path);
 
     if (label && Math.abs(tx - fx) > 40) {
+      const midX = (fx + tx) / 2;
       const txt = document.createElementNS('http://www.w3.org/2000/svg','text');
       txt.setAttribute('x', midX + 3);
       txt.setAttribute('y', (fy + ty) / 2 + 3);
-      txt.setAttribute('fill', '#f59e0b');
+      txt.setAttribute('fill', isCritical ? '#ef4444' : '#f59e0b');
       txt.setAttribute('font-size', '8');
       txt.setAttribute('font-family', 'JetBrains Mono, monospace');
       txt.textContent = label;
@@ -3239,6 +3259,14 @@ const GanttRenderer = (() => {
         const btn = document.getElementById('zoom' + z);
         if (btn) btn.className = (z.toLowerCase() === mode) ? 'btn btn-primary' : 'btn btn-outline';
       });
+    },
+
+    setLineType(type) {
+      currentLineType = type;
+    },
+
+    getLineType() {
+      return currentLineType;
     },
 
     scrollToToday() {
@@ -3270,7 +3298,7 @@ const GanttRenderer = (() => {
       svg.setAttribute('height', H);
       svg.setAttribute('viewBox', `${scrollX} 0 ${W} ${H}`);
 
-      // Arrow marker
+      // Arrow markers
       const defs = document.createElementNS('http://www.w3.org/2000/svg','defs');
       const marker = document.createElementNS('http://www.w3.org/2000/svg','marker');
       marker.setAttribute('id','arrow'); marker.setAttribute('viewBox','0 0 10 10');
@@ -3282,6 +3310,18 @@ const GanttRenderer = (() => {
       poly.setAttribute('fill','#f59e0b');
       marker.appendChild(poly);
       defs.appendChild(marker);
+
+      const markerCrit = document.createElementNS('http://www.w3.org/2000/svg','marker');
+      markerCrit.setAttribute('id','arrow-critical'); markerCrit.setAttribute('viewBox','0 0 10 10');
+      markerCrit.setAttribute('refX','5'); markerCrit.setAttribute('refY','5');
+      markerCrit.setAttribute('markerWidth','7'); markerCrit.setAttribute('markerHeight','7');
+      markerCrit.setAttribute('orient','auto-start-reverse');
+      const polyCrit = document.createElementNS('http://www.w3.org/2000/svg','path');
+      polyCrit.setAttribute('d','M 0 0 L 10 5 L 0 10 z');
+      polyCrit.setAttribute('fill','#ef4444');
+      markerCrit.appendChild(polyCrit);
+      defs.appendChild(markerCrit);
+
       svg.appendChild(defs);
 
       // Background header
@@ -3458,8 +3498,9 @@ const GanttRenderer = (() => {
 
           const fy = HEADER_H + pi * ROW_H + ROW_H / 2;
           const ty = HEADER_H + ti * ROW_H + ROW_H / 2;
+          const isCritical = !!((pred.t.isCritical || pred.t.critical) && (t.isCritical || t.critical));
           const lagLabel = pr.type + (pr.lag !== 0 ? (pr.lag > 0 ? '+' + pr.lag : pr.lag) : '');
-          drawArrow(svg, fx, fy, tx, ty, lagLabel);
+          drawArrow(svg, fx, fy, tx, ty, lagLabel, isCritical);
         });
       });
 
@@ -3496,6 +3537,64 @@ const GanttRenderer = (() => {
         this.render(window._cpmTasks || []);
       });
       window.addEventListener('mouseup', () => { isDragging = false; });
+
+      // ── Wheel Event Listener for the 3 Scroll Modes ──
+      area.addEventListener('wheel', e => {
+        const isCtrl = e.ctrlKey || e.metaKey;
+        const isAlt = e.altKey;
+        const isShift = e.shiftKey;
+
+        if (!isCtrl && !isAlt) return;
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        const zoomIn = e.deltaY < 0;
+        const W = area.clientWidth || 900;
+
+        // Setting 3: Ctrl + Shift + Scroll -> Geometric Zoom (Center stable)
+        if (isCtrl && isShift) {
+          const oldScale = parseFloat(area.getAttribute('data-geometric-scale') || '1.0');
+          const factor = zoomIn ? 1.08 : 0.925;
+          let newScale = Math.max(0.5, Math.min(2.5, parseFloat((oldScale * factor).toFixed(3))));
+          area.setAttribute('data-geometric-scale', newScale);
+          
+          const svg = document.getElementById('ganttSvg');
+          if (svg) {
+            svg.style.transform = (newScale !== 1.0) ? `scale(${newScale})` : '';
+            svg.style.transformOrigin = '50% 50%';
+          }
+          return;
+        }
+
+        // Setting 1: Ctrl + Scroll -> Expand timeline, left end stable
+        if (isCtrl && !isAlt && !isShift) {
+          const oldPx = pxPerDay;
+          const factor = zoomIn ? 1.15 : 0.87;
+          const newPx = Math.max(8, Math.min(200, Math.round(oldPx * factor)));
+          if (newPx === oldPx) return;
+
+          pxPerDay = newPx;
+          scrollX = Math.max(0, Math.round(scrollX * (newPx / oldPx)));
+          this.render(window._cpmTasks || []);
+          return;
+        }
+
+        // Setting 2: Alt + Scroll -> Expand timeline, center stable
+        if (isAlt && !isCtrl && !isShift) {
+          const oldPx = pxPerDay;
+          const factor = zoomIn ? 1.15 : 0.87;
+          const newPx = Math.max(8, Math.min(200, Math.round(oldPx * factor)));
+          if (newPx === oldPx) return;
+
+          const oldCenter = scrollX + (W / 2);
+          pxPerDay = newPx;
+          const newCenter = oldCenter * (newPx / oldPx);
+          scrollX = Math.max(0, Math.round(newCenter - (W / 2)));
+          this.render(window._cpmTasks || []);
+          return;
+        }
+      }, { passive: false });
     }
   };
 })();
@@ -3972,6 +4071,15 @@ const CivilPM = (() => {
 
     setZoom(mode) {
       GanttRenderer.setZoom(mode);
+      this.renderGantt();
+    },
+
+    setLineType(type) {
+      GanttRenderer.setLineType(type);
+      ['Orthogonal', 'Curved', 'Straight'].forEach(t => {
+        const btn = document.getElementById('lineType' + t);
+        if (btn) btn.className = (t.toLowerCase() === type) ? 'btn btn-primary' : 'btn btn-outline';
+      });
       this.renderGantt();
     },
 

@@ -664,14 +664,23 @@
       this.render();
     }
 
-    handleSearch(val) {
+    handleSearch(val, immediate = false) {
       this.searchQuery = val;
-      const target = document.getElementById('naval-subcontent-target');
-      if (target) {
-        if (this.currentTab === 'projects') target.innerHTML = this.renderProjectsTab();
-        else if (this.currentTab === 'procurement') target.innerHTML = this.renderProcurementTab();
-        else if (this.currentTab === 'votes') target.innerHTML = this.renderVotesTab();
+      const doSearch = () => {
+        const target = document.getElementById('naval-subcontent-target');
+        if (target) {
+          if (this.currentTab === 'projects') target.innerHTML = this.renderProjectsTab();
+          else if (this.currentTab === 'procurement') target.innerHTML = this.renderProcurementTab();
+          else if (this.currentTab === 'votes') target.innerHTML = this.renderVotesTab();
+        }
+      };
+      if (immediate) {
+        clearTimeout(this._searchDebounce);
+        doSearch();
+        return;
       }
+      clearTimeout(this._searchDebounce);
+      this._searchDebounce = setTimeout(doSearch, 150);
     }
 
     switchTabAndPosition(tab, position) {

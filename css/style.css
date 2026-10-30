@@ -4,7 +4,7 @@
    Categories: Religious | Clean Sri Lanka | Housing | Miscellaneous
    =================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
+/* Fonts loaded via preconnected HTML link tags in index.html for high-speed non-blocking render */
 
 /* === ROOT DESIGN TOKENS === */
 :root {
@@ -62,6 +62,9 @@
 
   /* Layout */
   --sidebar-w: 265px;
+  --sidebar-w-collapsed: 68px;
+  --sidebar-w-min: 190px;
+  --sidebar-w-max: 420px;
   --header-h: 64px;
   --radius-sm: 6px;
   --radius-md: 10px;
@@ -99,20 +102,303 @@ body {
 /* === SIDEBAR === */
 .sidebar {
   width: var(--sidebar-w);
+  min-width: var(--sidebar-w);
+  max-width: var(--sidebar-w);
   background: var(--bg-card);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
   z-index: 200;
+  position: relative;
+  transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1), min-width 0.25s cubic-bezier(0.16, 1, 0.3, 1), max-width 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+/* Resizing state: disables transitions during live drag */
+body.is-resizing-sidebar,
+body.is-resizing-sidebar * {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+.sidebar.is-resizing {
+  transition: none !important;
+}
+
+/* Collapsed Icon-Only State */
+.sidebar.is-collapsed,
+html.sidebar-collapsed .sidebar {
+  width: var(--sidebar-w-collapsed) !important;
+  min-width: var(--sidebar-w-collapsed) !important;
+  max-width: var(--sidebar-w-collapsed) !important;
 }
 
 .sidebar-brand {
-  padding: 18px 20px;
+  padding: 14px 14px;
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: var(--header-h);
+  position: relative;
+  overflow: hidden;
+}
+
+.brand-left {
+  display: flex;
+  align-items: center;
   gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.sidebar.is-collapsed .sidebar-brand,
+html.sidebar-collapsed .sidebar .sidebar-brand {
+  padding: 14px 0;
+  justify-content: center;
+}
+
+.sidebar.is-collapsed .brand-left,
+html.sidebar-collapsed .sidebar .brand-left {
+  justify-content: center;
+  gap: 0;
+  flex: none;
+}
+
+.brand-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  white-space: nowrap;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.sidebar.is-collapsed .brand-info,
+html.sidebar-collapsed .sidebar .brand-info {
+  opacity: 0;
+  pointer-events: none;
+  width: 0;
+  margin: 0;
+  transform: translateX(-10px);
+  display: none !important;
+}
+
+/* Sidebar Toggle Button (Inside Brand Header) */
+.sidebar-toggle-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+  flex-shrink: 0;
+  font-size: 0.8rem;
+}
+.sidebar-toggle-btn:hover {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: rgba(56, 189, 248, 0.35);
+  color: var(--accent);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+}
+.sidebar.is-collapsed .sidebar-toggle-btn,
+html.sidebar-collapsed .sidebar .sidebar-toggle-btn {
+  display: none;
+}
+
+/* Floating Edge Chevron Collapse Button */
+.sidebar-collapse-edge-btn {
+  position: absolute;
+  top: 72px;
+  right: -12px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #0b1324;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 220;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+  font-size: 0.68rem;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 0.85;
+}
+.sidebar-collapse-edge-btn:hover {
+  opacity: 1;
+  background: #1e293b;
+  border-color: #38bdf8;
+  color: #38bdf8;
+  transform: scale(1.15);
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.5);
+}
+.sidebar.is-collapsed .sidebar-collapse-edge-btn i,
+html.sidebar-collapsed .sidebar .sidebar-collapse-edge-btn i {
+  transform: rotate(180deg);
+}
+
+/* Draggable Splitter Handle */
+.sidebar-resizer {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 210;
+  transition: background 0.18s ease;
+}
+.sidebar-resizer:hover,
+.sidebar-resizer.is-dragging {
+  background: rgba(56, 189, 248, 0.5);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+}
+
+/* Topbar Toggle Button */
+.topbar-sidebar-toggle {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: 0.95rem;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+.topbar-sidebar-toggle:hover {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: rgba(56, 189, 248, 0.4);
+  color: var(--accent);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+}
+
+/* Collapsed Navigation Styles */
+.sidebar.is-collapsed .nav-section,
+html.sidebar-collapsed .sidebar .nav-section {
+  height: 1px;
+  margin: 10px 8px;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 0;
+  color: transparent;
+  overflow: hidden;
+}
+
+.sidebar.is-collapsed .nav-link,
+html.sidebar-collapsed .sidebar .nav-link {
+  justify-content: center;
+  padding: 10px 0;
+  position: relative;
+  gap: 0;
+}
+
+.sidebar.is-collapsed .nav-link i,
+html.sidebar-collapsed .sidebar .nav-link i {
+  width: auto;
+  font-size: 1.15rem;
+  margin: 0;
+}
+
+.sidebar.is-collapsed .nav-link .nav-label,
+html.sidebar-collapsed .sidebar .nav-link .nav-label {
+  display: none !important;
+}
+
+.sidebar.is-collapsed .nav-badge,
+html.sidebar-collapsed .sidebar .nav-badge {
+  position: absolute;
+  top: 5px;
+  right: 12px;
+  min-width: 8px;
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  font-size: 0;
+  border-radius: 50%;
+  border: 1.5px solid var(--bg-card);
+}
+
+/* Collapsed Footer Styles */
+.sidebar.is-collapsed .sidebar-footer,
+html.sidebar-collapsed .sidebar .sidebar-footer {
+  padding: 10px 8px;
+}
+
+.sidebar.is-collapsed .fb-status,
+html.sidebar-collapsed .sidebar .fb-status {
+  padding: 8px 4px;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar.is-collapsed .fb-status-row,
+html.sidebar-collapsed .sidebar .fb-status-row {
+  justify-content: center;
+}
+
+.sidebar.is-collapsed .fb-status-row .fb-status-label,
+.sidebar.is-collapsed .fb-status-row #fb-status-text,
+.sidebar.is-collapsed .fb-status-row #cloud-status-text,
+html.sidebar-collapsed .sidebar .fb-status-row #fb-status-text,
+html.sidebar-collapsed .sidebar .fb-status-row #cloud-status-text,
+.sidebar.is-collapsed .fb-status-details,
+html.sidebar-collapsed .sidebar .fb-status-details {
+  display: none !important;
+}
+
+.sidebar.is-collapsed .fb-status-row i,
+html.sidebar-collapsed .sidebar .fb-status-row i {
+  font-size: 1rem;
+}
+
+/* Floating Flyout Tooltip on Nav Link Hover */
+.sidebar-flyout-tooltip {
+  position: fixed;
+  background: rgba(15, 23, 42, 0.96);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #f8fafc;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 12px rgba(56, 189, 248, 0.2);
+  pointer-events: none;
+  z-index: 1000;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.sidebar-flyout-tooltip.is-visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.sidebar-flyout-tooltip .tooltip-badge {
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
 }
 
 .brand-icon {
@@ -1705,6 +1991,24 @@ textarea.form-control { resize: vertical; min-height: 80px; }
   gap: 2px;
   width: 100%;
   margin-top: 2px;
+}
+.cal-day-proj {
+  font-size: 0.58rem;
+  font-weight: 700;
+  line-height: 1.15;
+  margin-top: 1px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  word-break: break-word;
+}
+.cal-day-proj.proj-vin {
+  color: #38bdf8;
+}
+.cal-day-proj.proj-vout {
+  color: #f59e0b;
 }
 .cbadge {
   display: flex;

@@ -41,9 +41,13 @@
       const catCls  = CAT_CLASS[p.category]  || 'misc';
       const catIcon = CAT_ICONS[p.category] || 'fa-folder';
 
-      const daysRemaining = Math.ceil((new Date(p.end_date) - new Date()) / 86400000);
-      const daysStr = daysRemaining > 0 ? `${daysRemaining} days remaining` : (daysRemaining === 0 ? 'Last day!' : 'OVERDUE');
-      const daysColor = daysRemaining < 0 ? 'var(--danger)' : daysRemaining < 14 ? 'var(--warning)' : 'var(--success)';
+      const endD = p.end_date ? new Date(p.end_date) : null;
+      const isValidEnd = endD && !isNaN(endD.getTime());
+      const daysRemaining = isValidEnd ? Math.ceil((endD - new Date()) / 86400000) : null;
+      const daysStr = daysRemaining !== null 
+        ? (daysRemaining > 0 ? `${daysRemaining} days remaining` : (daysRemaining === 0 ? 'Last day!' : 'OVERDUE'))
+        : 'Ongoing';
+      const daysColor = daysRemaining === null ? 'var(--accent)' : (daysRemaining < 0 ? 'var(--danger)' : daysRemaining < 14 ? 'var(--warning)' : 'var(--success)');
 
       const totalLabDays = attachments.reduce((sum, a) => sum + (a.days_attached || 0), 0);
       const totalJobCost = jobCards.reduce((sum, j) => sum + (parseFloat(j.material_cost) || 0), 0);

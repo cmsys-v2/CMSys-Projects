@@ -35,6 +35,13 @@
     "projects": {
       ".read": true,
       ".write": true,
+      "capital_works": {
+        "$projectId": {
+          "wbs_tasks": {
+            ".indexOn": ["wbs_code", "is_critical", "start_date", "end_date"]
+          }
+        }
+      },
       ".indexOn": ["id", "code", "category", "status", "start_date", "end_date"]
     },
     "documents": {

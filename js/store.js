@@ -9,6 +9,31 @@
 
   const STORAGE_KEY = 'cmsys_project_v6_state';
 
+  // Fast, timezone-safe date parsing to local midnight timestamp
+  function parseLocalMidnight(dateInput) {
+    if (!dateInput) return NaN;
+    if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
+      const parts = dateInput.split('-');
+      return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])).getTime();
+    }
+    const d = new Date(dateInput);
+    d.setHours(0, 0, 0, 0);
+    return d.getTime();
+  }
+
+  // Timezone-safe local YYYY-MM-DD formatting (prevents toISOString 1-day lag in east-of-UTC timezones)
+  function formatLocalDate(d) {
+    if (typeof d === 'string') {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
+      d = new Date(d);
+    }
+    if (!d || isNaN(d.getTime())) return '';
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
   const NAVAL_ROLES = [
     { id: 'admin',     name: 'Admin',                 code: 'ADMIN',     level: 1, desc: 'Full System Administrator — All Privileges' },
     { id: 'cced_e',    name: 'CCED (E)',              code: 'CCED(E)',   level: 2, desc: 'Chief Civil Engineer Department (East)' },
@@ -57,6 +82,17 @@
       };
       this._subs = [];
       this._loaded = false;
+      this._cachedSailors = null;
+      this._sailorMap = null;
+      this._attachmentHistoryCache = new Map();
+    }
+
+    _invalidateSailorsCache() {
+      this._cachedSailors = null;
+      this._sailorMap = null;
+      if (this._attachmentHistoryCache) {
+        this._attachmentHistoryCache.clear();
+      }
     }
 
     // ── Subscriptions ──
@@ -70,6 +106,7 @@
     get attachments()      { return this._state.attachments; }
     get jobCards()         { return this._state.jobCards; }
     get sailors() {
+      if (this._cachedSailors) return this._cachedSailors;
       const map = new Map();
       const rawSailors = Array.isArray(this._state.sailors)
         ? this._state.sailors
@@ -124,24 +161,30 @@
           }
         }
       });
-      return Array.from(map.values());
+      this._cachedSailors = Array.from(map.values());
+      const lookup = new Map();
+      this._cachedSailors.forEach(s => {
+        const clean = (s.official_number || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+        if (clean) lookup.set(clean, s);
+        if (s._fbKey) lookup.set(String(s._fbKey), s);
+        if (s.id) lookup.set(String(s.id), s);
+        if (s.cmsys_sailor_id) lookup.set(String(s.cmsys_sailor_id), s);
+      });
+      this._sailorMap = lookup;
+      return this._cachedSailors;
     }
     get availability()     { return this._state.availability || {}; }
     get outProjects()      { return this._state.outProjects || {}; }
 
     getSailor(query) {
       if (!query) return null;
+      if (typeof query === 'object') return query;
+      if (!this._sailorMap) this.sailors;
       const clean = String(query).replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-      const list = this.sailors;
-      return list.find(s => {
-        const sOff = (s.official_number || s.off_no || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-        if (sOff === clean) return true;
-        if (s._fbKey && s._fbKey === query) return true;
-        if (s.id && String(s.id) === String(query)) return true;
-        if (s.cmsys_sailor_id && String(s.cmsys_sailor_id) === String(query)) return true;
-        if (s.name && s.name.toUpperCase() === String(query).toUpperCase()) return true;
-        return false;
-      }) || null;
+      if (this._sailorMap.has(clean)) return this._sailorMap.get(clean);
+      if (this._sailorMap.has(String(query))) return this._sailorMap.get(String(query));
+      const strQ = String(query).toUpperCase();
+      return this.sailors.find(s => s.name && s.name.toUpperCase() === strQ) || null;
     }
 
     getSailorPhoto(sailorOrOffNo) {
@@ -259,8 +302,13 @@
 
     // ── Sailor Attachment History with Locations, Out Projects & Victualing ──
     getSailorAttachmentHistory(officialNumber) {
-      const s = this.getSailor(officialNumber);
       const cleanNo = (officialNumber || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+      if (!this._attachmentHistoryCache) this._attachmentHistoryCache = new Map();
+      if (this._attachmentHistoryCache.has(cleanNo)) {
+        return this._attachmentHistoryCache.get(cleanNo);
+      }
+
+      const s = this.getSailor(officialNumber);
       const sFbKey = s ? (s._fbKey || s.cmsys_sailor_id || '') : '';
 
       const atts = this._state.attachments.filter(a => {
@@ -269,7 +317,7 @@
       });
 
       const list = atts.map(a => {
-        const p = this.getProject(a.project_id);
+        const p = this.getProject(a.project_id) || (this.getNavalProject && this.getNavalProject(a.project_id));
         const cat = p ? p.category : (a.category || 'General');
         const isOut = (p && (cat === 'Religious' || cat === 'Housing' || p.is_out_project)) || 
                       (s && s.victualing_type === 'V/Out') || 
@@ -277,7 +325,7 @@
         return {
           id: a.id,
           project_id: a.project_id,
-          project_title: p ? p.title : a.project_id,
+          project_title: p ? (p.title || p.projectName || p.name) : (a.project_title || a.project_name || a.project_id),
           location: p ? p.location : 'Site',
           category: cat,
           from_date: a.from_date || a.start_date,
@@ -316,28 +364,42 @@
         });
       }
 
-      return list.sort((a,b) => new Date(b.from_date) - new Date(a.from_date));
+      const sorted = list.sort((a,b) => new Date(b.from_date) - new Date(a.from_date));
+      this._attachmentHistoryCache.set(cleanNo, sorted);
+      return sorted;
     }
 
     // ── Period Metrics for Calendar & Master Personnel Register Table ──
-    getSailorPeriodMetrics(officialNumber, startDate, endDate) {
-      const s = this.getSailor(officialNumber);
+    getSailorPeriodMetrics(officialNumberOrSailor, startDate, endDate, includeCalendarMap = true) {
+      const s = typeof officialNumberOrSailor === 'object' && officialNumberOrSailor !== null
+        ? officialNumberOrSailor
+        : this.getSailor(officialNumberOrSailor);
       if (!s) {
+        const offNo = String(officialNumberOrSailor || '');
         return {
-          officialNumber, name: officialNumber, rank: 'AB', trade: 'MA',
+          officialNumber: offNo, name: offNo, rank: 'AB', trade: 'MA',
           homeLocation: 'Trincomalee', district: 'Trincomalee', performanceScore: 7.5,
           victualingType: 'V/In', isVictualingOut: false,
           deployedDaysVicIn: 0, deployedDaysVicOut: 0, totalDeployedDays: 0,
           sickDays: 0, sickIncidents: [], leaveDays: 0, leavePeriods: 'None',
-          otherDays: 0, calendarDayMap: {}, history: []
+          otherDays: 0, calendarDayMap: includeCalendarMap ? {} : null, history: []
         };
       }
 
       const sFbKey = s._fbKey || s.cmsys_sailor_id || '';
       const history = this.getSailorAttachmentHistory(s.official_number);
 
-      const pStart = new Date(startDate); pStart.setHours(0,0,0,0);
-      const pEnd   = new Date(endDate);   pEnd.setHours(0,0,0,0);
+      // Pre-compute parsed timestamps once instead of per-day in loop
+      const parsedHistory = history.map(h => {
+        return {
+          item: h,
+          fromTime: parseLocalMidnight(h.from_date),
+          toTime: parseLocalMidnight(h.to_date)
+        };
+      });
+
+      const pStartTime = parseLocalMidnight(startDate);
+      const pEndTime   = parseLocalMidnight(endDate);
 
       let deployedDaysVicIn = 0;
       let deployedDaysVicOut = 0;
@@ -346,13 +408,14 @@
       let otherDays = 0;
       const leaveDates = [];
       const sickIncidents = [];
-      const calendarDayMap = {};
+      const calendarDayMap = includeCalendarMap ? {} : null;
 
-      const cur = new Date(pStart);
-      while (cur <= pEnd) {
-        const curStr = cur.toISOString().split('T')[0];
+      let cur = new Date(pStartTime);
+      while (cur.getTime() <= pEndTime) {
+        const curStr = formatLocalDate(cur);
         const ym = curStr.slice(0, 7);
         const dayNum = cur.getDate();
+        const curTime = cur.getTime();
 
         let dayType = null;
         let dayStatus = null;
@@ -384,12 +447,9 @@
           }
         }
 
-        // 2. Check Project Attachments & Out Projects
-        const matchingAtt = history.find(h => {
-          const f = new Date(h.from_date); f.setHours(0,0,0,0);
-          const t = new Date(h.to_date);   t.setHours(0,0,0,0);
-          return cur >= f && cur <= t;
-        });
+        // 2. Check Project Attachments & Out Projects via pre-parsed timestamps
+        const found = parsedHistory.find(ph => curTime >= ph.fromTime && curTime <= ph.toTime);
+        const matchingAtt = found ? found.item : null;
 
         if (matchingAtt) {
           isOutProj = matchingAtt.isOutProject;
@@ -416,24 +476,26 @@
           }
         }
 
-        calendarDayMap[curStr] = {
-          date: curStr,
-          day: dayNum,
-          type: dayType,
-          status: dayStatus,
-          isOutProject: isOutProj,
-          victualing: victualing,
-          details: dayDetails
-        };
+        if (includeCalendarMap) {
+          calendarDayMap[curStr] = {
+            date: curStr,
+            day: dayNum,
+            type: dayType,
+            status: dayStatus,
+            isOutProject: isOutProj,
+            victualing: victualing,
+            details: dayDetails
+          };
+        }
 
         cur.setDate(cur.getDate() + 1);
       }
 
       const leavePeriods = this._formatDateRanges(leaveDates);
       const totalDeployedDays = deployedDaysVicIn + deployedDaysVicOut;
-      const isCurrentlyVOut = (s.victualing_type === 'V/Out') || history.some(h => {
-        const today = new Date(); today.setHours(0,0,0,0);
-        return new Date(h.to_date) >= today && h.victualing === 'V/Out';
+      const todayTime = parseLocalMidnight(new Date());
+      const isCurrentlyVOut = (s.victualing_type === 'V/Out') || parsedHistory.some(ph => {
+        return ph.toTime >= todayTime && ph.item.victualing === 'V/Out';
       });
 
       return {
@@ -451,7 +513,7 @@
         deployedDaysVicOut,
         totalDeployedDays,
         sickDays,
-        sickIncidents,
+        sickIncidents: includeCalendarMap ? sickIncidents : [],
         leaveDays,
         leavePeriods,
         otherDays,
@@ -494,7 +556,13 @@
       list.forEach(s => {
         if (trade !== 'ALL' && s.trade !== trade) return;
 
-        const metrics = this.getSailorPeriodMetrics(s.official_number, startDate, endDate);
+        // Fast search pre-check before computing full calendar metrics
+        if (cleanSearch) {
+          const quickHaystack = `${s.name || ''} ${s.official_number || ''} ${s.trade || ''} ${s.rank || ''} ${s.district || s.home_location || ''}`.toLowerCase();
+          if (!quickHaystack.includes(cleanSearch)) return;
+        }
+
+        const metrics = this.getSailorPeriodMetrics(s, startDate, endDate, false);
 
         // Victualing filter
         if (victualing === 'V/Out' && !metrics.isVictualingOut && metrics.deployedDaysVicOut === 0) return;
@@ -504,12 +572,6 @@
         if (status === 'attached' && metrics.totalDeployedDays === 0) return;
         if (status === 'leave' && metrics.leaveDays === 0) return;
         if (status === 'sick' && metrics.sickDays === 0) return;
-
-        // Search text
-        if (cleanSearch) {
-          const haystack = `${s.name} ${s.official_number} ${s.trade} ${s.rank} ${metrics.homeLocation}`.toLowerCase();
-          if (!haystack.includes(cleanSearch)) return;
-        }
 
         results.push(metrics);
       });
@@ -663,7 +725,12 @@
       this._save(); this._emit('PROJECT_DELETED', id);
     }
 
-    getProject(id) { return this._state.projects.find(p => p.id === id) || null; }
+    getProject(id) {
+      if (!id) return null;
+      return this._state.projects.find(p => p.id === id || p.code === id) ||
+             (this._state.navalProjects || []).find(p => p.id === id || p.code === id) ||
+             null;
+    }
     
     getProjectsByCategory(cat) {
       if (!cat || cat === 'All') return this._state.projects;
@@ -884,7 +951,12 @@
     }
 
     // ── Labour Attachment CRUD ──
-    setAttachments(list) { this._state.attachments = list; this._save(); this._emit('ATTACHMENTS_SET', list); }
+    setAttachments(list) { 
+      this._state.attachments = list; 
+      this._invalidateSailorsCache();
+      this._save(); 
+      this._emit('ATTACHMENTS_SET', list); 
+    }
 
     addAttachment(att) {
       att.id = att.id || `LA-${Date.now()}`;
@@ -895,7 +967,9 @@
       }
       att.status = att.status || 'Active';
       this._state.attachments.push(att);
-      this._save(); this._emit('ATTACHMENT_ADDED', att);
+      this._invalidateSailorsCache();
+      this._save(); 
+      this._emit('ATTACHMENT_ADDED', att);
     }
 
     bulkAddAttachments(list) {
@@ -908,7 +982,9 @@
         att.status = att.status || 'Active';
         this._state.attachments.push(att);
       });
-      this._save(); this._emit('ATTACHMENTS_BULK', list);
+      this._invalidateSailorsCache();
+      this._save(); 
+      this._emit('ATTACHMENTS_BULK', list);
     }
 
     updateAttachment(id, changes) {
@@ -920,13 +996,17 @@
           const d1 = new Date(a.from_date), d2 = new Date(a.to_date);
           a.days_attached = Math.max(1, Math.ceil((d2 - d1) / 86400000) + 1);
         }
-        this._save(); this._emit('ATTACHMENT_UPDATED', {id, changes}); 
+        this._invalidateSailorsCache();
+        this._save(); 
+        this._emit('ATTACHMENT_UPDATED', {id, changes}); 
       }
     }
 
     deleteAttachment(id) {
       this._state.attachments = this._state.attachments.filter(a => a.id !== id);
-      this._save(); this._emit('ATTACHMENT_DELETED', id);
+      this._invalidateSailorsCache();
+      this._save(); 
+      this._emit('ATTACHMENT_DELETED', id);
     }
 
     getAttachmentsByProject(projectId) { return this._state.attachments.filter(a => a.project_id === projectId); }
@@ -934,32 +1014,54 @@
 
     getDailyTotals(startDate, endDate) {
       const totals = {};
-      const start = new Date(startDate); start.setHours(0,0,0,0);
-      const end   = new Date(endDate);   end.setHours(0,0,0,0);
-      let cur = new Date(start);
-      while (cur <= end) {
-        const key = cur.toISOString().split('T')[0];
-        totals[key] = 0;
-        this._state.attachments.forEach(a => {
-          const f = new Date(a.from_date); f.setHours(0,0,0,0);
-          const t = new Date(a.to_date);   t.setHours(0,0,0,0);
-          if (cur >= f && cur <= t) totals[key]++;
-        });
+      const startTime = parseLocalMidnight(startDate);
+      const endTime   = parseLocalMidnight(endDate);
+
+      // Pre-compute parsed attachment interval timestamps once to eliminate O(N*D) date object allocations
+      const parsedAtts = [];
+      const atts = this._state.attachments || [];
+      for (let i = 0; i < atts.length; i++) {
+        const a = atts[i];
+        if (a && a.from_date && a.to_date) {
+          const f = parseLocalMidnight(a.from_date);
+          const t = parseLocalMidnight(a.to_date);
+          if (!isNaN(f) && !isNaN(t)) {
+            parsedAtts.push({ f, t });
+          }
+        }
+      }
+
+      let cur = new Date(startTime);
+      const numAtts = parsedAtts.length;
+      while (cur.getTime() <= endTime) {
+        const key = formatLocalDate(cur);
+        const curTime = cur.getTime();
+        let count = 0;
+        for (let i = 0; i < numAtts; i++) {
+          if (curTime >= parsedAtts[i].f && curTime <= parsedAtts[i].t) {
+            count++;
+          }
+        }
+        totals[key] = count;
         cur.setDate(cur.getDate() + 1);
       }
       return totals;
     }
 
     getHeadcountByDate(dateStr) {
-      const d = new Date(dateStr); d.setHours(0,0,0,0);
+      const targetTime = parseLocalMidnight(dateStr);
       const result = {};
-      this._state.attachments.forEach(a => {
-        const from = new Date(a.from_date); from.setHours(0,0,0,0);
-        const to   = new Date(a.to_date);   to.setHours(0,0,0,0);
-        if (d >= from && d <= to) {
-          result[a.project_id] = (result[a.project_id] || 0) + 1;
+      const atts = this._state.attachments || [];
+      for (let i = 0; i < atts.length; i++) {
+        const a = atts[i];
+        if (a && a.from_date && a.to_date) {
+          const from = parseLocalMidnight(a.from_date);
+          const to   = parseLocalMidnight(a.to_date);
+          if (targetTime >= from && targetTime <= to) {
+            result[a.project_id] = (result[a.project_id] || 0) + 1;
+          }
         }
-      });
+      }
       return result;
     }
 
@@ -985,10 +1087,11 @@
       } else {
         this._state.sailors = Array.isArray(list) ? list : [];
       }
+      this._invalidateSailorsCache();
       this._emit('SAILORS_SET', this._state.sailors);
     }
     setAvailability(av) { this._state.availability = av || {}; this._emit('AVAILABILITY_SET', this._state.availability); }
-    setOutProjects(op) { this._state.outProjects = op || {}; this._emit('OUT_PROJECTS_SET', this._state.outProjects); }
+    setOutProjects(op) { this._state.outProjects = op || {}; this._invalidateSailorsCache(); this._emit('OUT_PROJECTS_SET', this._state.outProjects); }
 
     setGanttZoom(z) { this._state.ganttZoom = z; this._save(); this._emit('ZOOM_CHANGED', z); }
     setGanttStartYear(yr) { this._state.ganttStartYear = yr; this._save(); this._emit('GANTT_YEAR_CHANGED', yr); }
@@ -1001,7 +1104,6 @@
           projects, navalProjects, procurementFiles, attachments, jobCards, documents, weatherLogs, users, activeUserId, ganttZoom, ganttStartYear, activeCategory, activeNavalVote, v: 6
         });
         localStorage.setItem(STORAGE_KEY, serialized);
-        localStorage.setItem('cmsys_project_master_state', serialized);
       } catch(e) { console.warn('CMSys Store save failed:', e); }
     }
 
